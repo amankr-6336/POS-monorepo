@@ -11,3 +11,77 @@
     display: none !important;
   }
 }
+
+/* --- ARTISAN LIGHT THEME OVERRIDES --- */
+
+/* Fix text-white to be dark coffee/charcoal on light layout structures */
+h1.text-white,
+h2.text-white,
+h3.text-white,
+h4.text-white,
+h5.text-white,
+span.text-white,
+p.text-white,
+div.text-white,
+label.text-white {
+  color: #1C150E !important;
+}
+
+/* Ensure button and primary action texts remain high-contrast white */
+button.text-white,
+.btn.text-white,
+a.text-white,
+.bg-gradient-to-r .text-white,
+.bg-red-500 .text-white,
+.bg-rose-500 .text-white,
+.bg-emerald-500 .text-white,
+.bg-violet-600 .text-white,
+.bg-indigo-600 .text-white,
+.bg-violet-600 h3.text-white,
+.bg-indigo-600 h3.text-white,
+.bg-gradient-to-r h3.text-white,
+.bg-violet-600 p.text-white,
+.bg-indigo-600 p.text-white,
+.bg-gradient-to-r p.text-white,
+.bg-violet-600 span.text-white,
+.bg-indigo-600 span.text-white,
+.bg-gradient-to-r span.text-white {
+  color: #ffffff !important;
+}
+
+/* Color overrides for light-bg readability on text highlights */
+.text-emerald-400 {
+  color: #166534 !important; /* emerald-800 */
+}
+.text-amber-400 {
+  color: #9a3412 !important; /* amber-800 */
+}
+.text-rose-400 {
+  color: #9f1239 !important; /* rose-800 */
+}
+.text-violet-400 {
+  color: #c2410c !important; /* orange-700 / terracotta */
+}
+.text-blue-400 {
+  color: #1e40af !important; /* blue-800 */
+}
+.text-pink-400 {
+  color: #9d174d !important; /* pink-800 */
+}
+
+/* Fix shadow black styling to feel very light and clean */
+.shadow-xl {
+  box-shadow: 0 20px 25px -5px rgba(46, 37, 27, 0.04), 0 8px 10px -6px rgba(46, 37, 27, 0.04) !important;
+}
+
+/* Custom scrollbar adjustments to fit the artisan theme */
+::-webkit-scrollbar-track {
+  background: #FDFBF7 !important;
+}
+::-webkit-scrollbar-thumb {
+  background: #EDE8E0 !important;
+  border-radius: 9999px !important;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #DFD8CC !important;
+}
