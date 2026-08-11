@@ -1,29 +1,29 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Button, Input, Card } from "@pos/ui";
-import { CheckCircle2, Send } from "lucide-react";
+import { Bell, CheckCircle2 } from "lucide-react";
 
 const API_BASE_URL = "http://localhost:5000/api/v1";
 
 export default function Contact() {
   const [searchParams] = useSearchParams();
+  
   const [name, setName] = useState("");
-  const [restaurantName, setRestaurantName] = useState("");
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [message, setMessage] = useState("");
+  const [issueType, setIssueType] = useState("Technical Support");
+  const [details, setDetails] = useState("");
+  const [isUrgent, setIsUrgent] = useState(false);
   
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Pre-fill email and plan notes if passed in search query params
+  // Pre-fill email and details if passed in query params
   useEffect(() => {
     const qEmail = searchParams.get("email");
     const qPlan = searchParams.get("plan");
     if (qEmail) setEmail(qEmail);
     if (qPlan) {
-      setMessage(`Interested in signing up for the ${qPlan.toUpperCase()} pricing plan. Please guide me with sandbox access.`);
+      setDetails(`Interested in signing up for the ${qPlan.toUpperCase()} pricing plan. Please guide me with sandbox access.`);
     }
   }, [searchParams]);
 
@@ -31,26 +31,34 @@ export default function Contact() {
     e.preventDefault();
     setError(null);
 
-    if (!name || !restaurantName || !email || !phone || !message) {
-      setError("Please fill out all contact fields.");
+    if (!name || !email || !details) {
+      setError("Please fill out all required fields.");
       return;
     }
 
     setLoading(true);
     try {
+      // Map form fields to match database lead validation rules
+      const payload = {
+        name,
+        restaurantName: "The Rail Customer",
+        email,
+        phone: "+1 (800) 555-0199",
+        message: `[Issue Type: ${issueType}] ${details}${isUrgent ? ' (MARK AS URGENT)' : ''}`
+      };
+
       const res = await fetch(`${API_BASE_URL}/public/leads`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, restaurantName, email, phone, message }),
+        body: JSON.stringify(payload),
       });
 
       if (res.ok) {
         setSuccess(true);
         setName("");
-        setRestaurantName("");
         setEmail("");
-        setPhone("");
-        setMessage("");
+        setDetails("");
+        setIsUrgent(false);
       } else {
         throw new Error("Failed to submit inquiry.");
       }
@@ -62,110 +70,235 @@ export default function Contact() {
   };
 
   return (
-    <div className="flex flex-col">
-      {/* Hero Section */}
-      <section className="max-w-6xl mx-auto px-6 py-20 text-left w-full">
-        <h1 className="text-4xl md:text-5xl lg:text-6xl font-black font-serif text-zinc-100 tracking-tight leading-none">
-          Get in Touch
-        </h1>
-        <p className="text-zinc-450 text-sm md:text-base mt-6 max-w-2xl leading-relaxed font-light">
-          Have questions about transitioning to The Printed Plate? We're here to help.
-        </p>
-      </section>
-
-      {/* Two-Column Contact Layout */}
-      <section className="max-w-6xl mx-auto px-6 py-16 border-t border-zinc-800/40 grid grid-cols-1 lg:grid-cols-12 gap-12 w-full mb-10">
+    <div className="bg-[#FCF5EB] min-h-screen py-16 lg:py-24">
+      <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
         
-        {/* Left Column: Form */}
-        <div className="lg:col-span-7">
-          <Card className="bg-zinc-900/20 border border-zinc-800 p-8 rounded-2xl relative shadow-lg">
-            {success ? (
-              <div className="text-center flex flex-col items-center gap-4 py-8">
-                <CheckCircle2 className="w-14 h-14 text-[#5A6F62]" />
-                <h3 className="font-bold font-serif text-zinc-100 text-base mt-2">Message Sent Successfully!</h3>
-                <p className="text-zinc-450 text-xs leading-relaxed font-light max-w-sm">
-                  Thank you for reaching out. We will get back to you shortly to provide platform sandbox access codes.
-                </p>
+        {/* Left Column: SUPPORT Receipt Ticket */}
+        <div className="lg:col-span-5 flex justify-center w-full">
+          <div className="relative w-full max-w-sm bg-white border border-[#EDE8E0] shadow-xl p-8 font-mono text-[9px] text-[#1C150E] uppercase flex flex-col gap-6 rounded-sm">
+            
+            {/* Perforated Top edge */}
+            <div className="w-full border-t-[3px] border-dashed border-[#1C150E]/20 mt-[-16px]"></div>
+
+            {/* Push-pin hanger peg on right edge */}
+            <div className="absolute right-0 top-[28%] translate-x-1/2 w-6 h-6 rounded-full bg-[#1C150E] border border-black flex items-center justify-center shadow-md z-10 cursor-pointer">
+              <div className="w-1.5 h-1.5 rounded-full bg-[#E5AA70]"></div>
+            </div>
+
+            {/* Receipt Header */}
+            <div className="text-center flex flex-col items-center gap-1 mt-4">
+              <h2 className="font-serif text-3xl font-black tracking-widest text-[#1C150E]">SUPPORT</h2>
+              <span className="text-[#857766] tracking-[0.2em] font-semibold">TICKET# 9090</span>
+              <span className="text-[#857766] text-[8px] tracking-wider mt-1">20:22:05 EST</span>
+            </div>
+
+            {/* Divider */}
+            <div className="w-full border-t border-[#1C150E] my-1"></div>
+
+            {/* Phone Line Section */}
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[#857766] font-bold tracking-wider">PHONE LINE</span>
+              <span className="text-[11px] font-bold text-[#1C150E] tracking-wide">+1 (800) 555-0199</span>
+            </div>
+
+            {/* Kitchen Door Section */}
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[#857766] font-bold tracking-wider">KITCHEN DOOR</span>
+              <div className="text-[11px] font-bold text-[#1C150E] tracking-wide flex flex-col leading-relaxed">
+                <span>86 Prep Lane</span>
+                <span>Suite B</span>
+                <span>Chicago, IL 60607</span>
               </div>
-            ) : (
-              <form onSubmit={handleContactSubmit} className="flex flex-col gap-5">
-                <Input
-                  label="Full Name"
-                  placeholder="Jane Doe"
-                  value={name}
-                  onChange={(e: any) => setName(e.target.value)}
-                  disabled={loading}
-                />
+            </div>
+
+            {/* Service Hours Section */}
+            <div className="flex flex-col gap-2">
+              <span className="text-[#857766] font-bold tracking-wider">SERVICE HOURS</span>
+              <div className="text-[11px] font-bold text-[#1C150E] tracking-wide flex flex-col gap-1">
+                <div className="flex justify-between border-b border-[#EDE8E0]/40 pb-1">
+                  <span>Mon - Fri</span>
+                  <span>08:00 - 22:00</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Sat - Sun</span>
+                  <span>10:00 - 23:00</span>
+                </div>
+              </div>
+            </div>
+
+            {/* QR Code and Bottom support text */}
+            <div className="mt-8 text-center flex flex-col items-center gap-3">
+              {/* Custom SVG QR Code outline */}
+              <svg className="w-10 h-10 text-[#1C150E] opacity-95" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <rect x="2" y="2" width="6" height="6" strokeWidth="2" />
+                <rect x="16" y="2" width="6" height="6" strokeWidth="2" />
+                <rect x="2" y="16" width="6" height="6" strokeWidth="2" />
+                <rect x="9" y="9" width="6" height="6" strokeWidth="1.5" />
+                <path d="M16 16h2v2h-2zm4 4h2v2h-2zm-4 4h2v-2h-2zm4-4h2v-2h-2z" fill="currentColor" />
+              </svg>
+              <span className="text-[7.5px] font-bold tracking-[0.2em] text-[#857766]">SCAN FOR URGENT SUPPORT</span>
+            </div>
+
+            {/* Jagged Bottom edge perforation */}
+            <div className="absolute bottom-0 left-0 right-0 h-3 overflow-hidden translate-y-3">
+              <svg className="w-full h-full text-white fill-current" viewBox="0 0 100 10" preserveAspectRatio="none">
+                <polygon points="0,0 2.5,5 5,0 7.5,5 10,0 12.5,5 15,0 17.5,5 20,0 22.5,5 25,0 27.5,5 30,0 32.5,5 35,0 37.5,5 40,0 42.5,5 45,0 47.5,5 50,0 52.5,5 55,0 57.5,5 60,0 62.5,5 65,0 67.5,5 70,0 72.5,5 75,0 77.5,5 80,0 82.5,5 85,0 87.5,5 90,0 92.5,5 95,0 97.5,5 100,0 100,10 0,10" />
+              </svg>
+            </div>
+
+          </div>
+        </div>
+
+        {/* Right Column: Contact Form */}
+        <div className="lg:col-span-7 flex flex-col text-left">
+          
+          {/* Header */}
+          <div className="flex items-center gap-2.5 mb-4 text-[#1C150E]">
+            <Bell className="w-6 h-6 text-[#E5AA70] fill-current" />
+            <h1 className="font-serif text-2xl lg:text-[28px] font-black uppercase tracking-wide">
+              RING THE COUNTER
+            </h1>
+          </div>
+          
+          <p className="text-[#6E6050] text-[13px] font-light leading-relaxed mb-10 max-w-xl">
+            Need a hand with setup, or ran into a bug on the line? Drop us a ticket. We prioritize getting you back to service.
+          </p>
+
+          {success ? (
+            <div className="bg-white border border-[#EDE8E0] p-8 rounded-sm shadow-sm flex flex-col items-center text-center gap-4 max-w-md">
+              <CheckCircle2 className="w-12 h-12 text-[#5A6F62]" />
+              <h3 className="font-serif text-lg font-bold text-[#1C150E]">Ticket Fired!</h3>
+              <p className="text-[#6E6050] text-xs leading-relaxed font-light">
+                Your support chit has been printed in the kitchen. We will ring you back shortly to assist.
+              </p>
+              <button 
+                onClick={() => setSuccess(false)}
+                className="mt-4 text-[10px] font-bold tracking-[0.2em] uppercase text-[#1C150E] hover:text-[#E5AA70]"
+              >
+                File Another Ticket
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handleContactSubmit} className="flex flex-col gap-8 w-full max-w-2xl">
+              
+              {/* Name & Email inputs */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 
-                <Input
-                  label="Establishment Name"
-                  placeholder="The Daily Grind"
-                  value={restaurantName}
-                  onChange={(e: any) => setRestaurantName(e.target.value)}
-                  disabled={loading}
-                />
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Input
-                    label="Email Address"
+                {/* NAME */}
+                <div className="flex flex-col">
+                  <label className="text-[10px] tracking-[0.2em] font-bold text-[#857766] uppercase mb-1">
+                    NAME
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Chef Marco"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    disabled={loading}
+                    className="w-full bg-transparent border-b border-[#1C150E] text-[#1C150E] placeholder-[#857766]/40 py-2.5 text-xs font-semibold focus:outline-none focus:border-[#E5AA70] transition-colors rounded-none"
+                    required
+                  />
+                </div>
+                
+                {/* EMAIL */}
+                <div className="flex flex-col">
+                  <label className="text-[10px] tracking-[0.2em] font-bold text-[#857766] uppercase mb-1">
+                    EMAIL
+                  </label>
+                  <input
                     type="email"
-                    placeholder="jane@example.com"
+                    placeholder="expo@restaurant.com"
                     value={email}
-                    onChange={(e: any) => setEmail(e.target.value)}
+                    onChange={(e) => setEmail(e.target.value)}
                     disabled={loading}
-                  />
-                  <Input
-                    label="Phone Number"
-                    placeholder="9876543210"
-                    value={phone}
-                    onChange={(e: any) => setPhone(e.target.value)}
-                    disabled={loading}
+                    className="w-full bg-transparent border-b border-[#1C150E] text-[#1C150E] placeholder-[#857766]/40 py-2.5 text-xs font-semibold focus:outline-none focus:border-[#E5AA70] transition-colors rounded-none"
+                    required
                   />
                 </div>
 
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold text-zinc-400 tracking-wider uppercase">Message</label>
-                  <textarea
-                    placeholder="Tell us about your establishment..."
-                    value={message}
-                    onChange={(e: any) => setMessage(e.target.value)}
+              </div>
+
+              {/* ISSUE TYPE dropdown select */}
+              <div className="flex flex-col relative">
+                <label className="text-[10px] tracking-[0.2em] font-bold text-[#857766] uppercase mb-1">
+                  ISSUE TYPE
+                </label>
+                <div className="relative w-full">
+                  <select
+                    value={issueType}
+                    onChange={(e) => setIssueType(e.target.value)}
                     disabled={loading}
-                    rows={4}
-                    className="w-full px-4 py-3 bg-zinc-900 border border-zinc-850 rounded-xl text-zinc-150 placeholder-zinc-500 transition-all focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 text-sm resize-none"
-                  />
+                    className="w-full bg-transparent border-b border-[#1C150E] text-[#1C150E] py-2.5 text-xs font-semibold focus:outline-none focus:border-[#E5AA70] transition-colors rounded-none appearance-none cursor-pointer pr-10"
+                  >
+                    <option value="Technical Support">Technical Support</option>
+                    <option value="Billing & Account">Billing & Account</option>
+                    <option value="General Inquiry">General Inquiry</option>
+                  </select>
+                  {/* Custom Arrow */}
+                  <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none pr-1">
+                    <svg className="w-3.5 h-3.5 text-[#1C150E]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
                 </div>
+              </div>
 
-                {error && <p className="text-xs text-red-500 font-medium text-center">{error}</p>}
+              {/* DETAILS textarea */}
+              <div className="flex flex-col">
+                <label className="text-[10px] tracking-[0.2em] font-bold text-[#857766] uppercase mb-1">
+                  DETAILS
+                </label>
+                <textarea
+                  placeholder="Describe what went wrong on the line..."
+                  value={details}
+                  onChange={(e) => setDetails(e.target.value)}
+                  disabled={loading}
+                  rows={4}
+                  className="w-full border border-[#1C150E] bg-transparent text-[#1C150E] placeholder-[#857766]/40 p-4 h-32 text-xs font-semibold focus:outline-none focus:border-[#E5AA70] transition-colors resize-none rounded-none"
+                  required
+                />
+              </div>
 
-                <Button type="submit" className="w-full mt-2 py-3.5 flex items-center justify-center gap-1.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-bold shadow-md" disabled={loading}>
-                  <Send className="w-3.5 h-3.5" /> {loading ? "Sending..." : "Send Message"}
-                </Button>
-              </form>
-            )}
-          </Card>
+              {/* MARK AS URGENT checkbox */}
+              <div className="flex items-center">
+                <div 
+                  onClick={() => !loading && setIsUrgent(!isUrgent)}
+                  className="flex items-center gap-3.5 cursor-pointer select-none"
+                >
+                  <div className="w-5 h-5 border border-[#1C150E] bg-transparent flex items-center justify-center text-[#1C150E] relative transition-colors font-sans">
+                    {isUrgent && <span className="font-black text-xs">✓</span>}
+                  </div>
+                  <span className="text-[10px] font-bold tracking-[0.2em] text-[#1C150E] uppercase">
+                    MARK AS URGENT
+                  </span>
+                </div>
+              </div>
+
+              {error && <p className="text-xs text-red-500 font-semibold">{error}</p>}
+
+              {/* 3D-shadow Button */}
+              <div className="mt-4">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-8 py-3.5 bg-[#E5AA70] text-[#1C150E] border border-[#1C150E] font-bold uppercase tracking-[0.2em] text-[10px] flex items-center justify-center gap-2 shadow-[4px_4px_0px_0px_#1C150E] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all active:scale-[0.97]"
+                >
+                  {loading ? (
+                    "FIRING..."
+                  ) : (
+                    <>
+                      <span className="text-[11px]">▷</span> FIRE TICKET
+                    </>
+                  )}
+                </button>
+              </div>
+
+            </form>
+          )}
+
         </div>
 
-        {/* Right Column: Info Details */}
-        <div className="lg:col-span-5 flex flex-col gap-10 lg:pl-6">
-          <div className="flex flex-col gap-3">
-            <h2 className="text-2xl font-serif text-zinc-100">Our Office</h2>
-            <p className="text-zinc-450 text-sm font-light">Stop by or send us a letter.</p>
-            <div className="text-zinc-300 text-xs font-light leading-relaxed mt-1 flex flex-col">
-              <span>123 Letterpress Lane</span>
-              <span>Suite 400</span>
-              <span>San Francisco, CA 94103</span>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-3">
-            <h2 className="text-2xl font-serif text-zinc-100">Direct Contact</h2>
-            <div className="text-zinc-300 text-xs font-light leading-relaxed mt-1 flex flex-col gap-1">
-              <span>Email: <a href="mailto:hello@theprintedplate.com" className="text-violet-600 hover:underline">hello@theprintedplate.com</a></span>
-              <span>Phone: <a href="tel:5551234567" className="text-violet-600 hover:underline">(555) 123-4567</a></span>
-            </div>
-          </div>
-        </div>
-      </section>
+      </div>
     </div>
   );
 }
