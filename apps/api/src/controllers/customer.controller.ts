@@ -10,14 +10,14 @@ const JWT_SECRET = process.env.JWT_SECRET || "super_secret_pos_jwt_key_991823";
  */
 export async function getOrCreateCustomerSession(req: Request, res: Response) {
   const { name, mobileNumber, tableId, restaurantId } = req.body;
-
+  console.log(req.body);
   if (!tableId || !restaurantId) {
     return res.status(400).json({ message: "Table ID and Restaurant ID are required" });
   }
 
   try {
     let customer = await CustomerModel.findOne({ restaurantId, mobileNumber });
-    
+
     if (customer) {
       customer.visitCount += 1;
       customer.lastVisitAt = new Date();
