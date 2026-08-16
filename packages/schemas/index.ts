@@ -104,6 +104,8 @@ export const menuItemSchema = z.object({
 export const customerSessionSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   mobileNumber: z.string().min(10, "Mobile number must be at least 10 digits"),
+  restaurantId: z.string().min(1, "Restaurant ID is required"),
+  tableId: z.string().min(1, "Table ID is required"),
 });
 
 // Order Creation

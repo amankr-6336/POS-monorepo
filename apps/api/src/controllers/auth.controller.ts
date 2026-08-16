@@ -33,7 +33,7 @@ export async function loginStaff(req: Request, res: Response) {
       assignedStation: staff.assignedStation,
     };
 
-    const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: "15m" });
+    const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: "24h" });
     const refreshToken = jwt.sign({ id: staff._id }, JWT_REFRESH_SECRET, { expiresIn: "7d" });
 
     // Set refresh token in httpOnly cookie
@@ -127,7 +127,7 @@ export async function refreshStaffToken(req: Request, res: Response) {
       assignedStation: staff.assignedStation,
     };
 
-    const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: "15m" });
+    const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: "24h" });
 
     return res.status(200).json({ accessToken });
   } catch (error) {

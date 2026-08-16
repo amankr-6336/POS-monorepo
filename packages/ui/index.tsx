@@ -127,9 +127,10 @@ export interface ModalProps {
   onClose: () => void;
   title: string;
   children: React.ReactNode;
+  size?: "sm" | "md" | "lg" | "xl" | "2xl" | "3xl";
 }
 
-export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }: ModalProps) => {
+export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = "md" }: ModalProps) => {
   if (!isOpen) return null;
 
   return (
@@ -138,7 +139,17 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       
       {/* Content */}
-      <div className="relative w-full max-w-lg bg-zinc-950 border border-zinc-800/80 rounded-2xl shadow-2xl p-6 overflow-hidden max-h-[90vh] flex flex-col">
+      <div className={cn(
+        "relative w-full bg-zinc-950 border border-zinc-800/80 rounded-2xl shadow-2xl p-6 overflow-hidden max-h-[90vh] flex flex-col",
+        {
+          "max-w-md": size === "sm",
+          "max-w-lg": size === "md",
+          "max-w-xl": size === "lg",
+          "max-w-2xl": size === "xl",
+          "max-w-3xl": size === "2xl",
+          "max-w-4xl": size === "3xl",
+        }
+      )}>
         <div className="flex items-center justify-between pb-4 border-b border-zinc-800/50">
           <h3 className="text-lg font-bold text-white">{title}</h3>
           <button

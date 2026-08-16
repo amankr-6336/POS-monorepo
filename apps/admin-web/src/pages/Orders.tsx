@@ -15,6 +15,17 @@ export default function Orders() {
   const [activeOrder, setActiveOrder] = useState<any>(null);
   const [billDetails, setBillDetails] = useState<any>(null);
   const [billModalOpen, setBillModalOpen] = useState(false);
+  const [printKotOrder, setPrintKotOrder] = useState<any>(null);
+
+  useEffect(() => {
+    if (printKotOrder) {
+      const timer = setTimeout(() => {
+        window.print();
+        setPrintKotOrder(null);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [printKotOrder]);
 
   const fetchOrders = async () => {
     try {
@@ -144,7 +155,8 @@ export default function Orders() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <>
+      <div className="flex flex-col gap-6 no-print">
       <div>
         <h1 className="text-3xl font-black text-white tracking-tight">Active Orders</h1>
         <p className="text-zinc-400 text-sm mt-1">Track guest orders, generate bills, and clear tables</p>
@@ -180,6 +192,21 @@ export default function Orders() {
                 <td className="p-4">{getStatusBadge(o.status)}</td>
                 
                 <td className="p-4 text-right flex justify-end gap-2 items-center">
+                  {/* Status advancer */}
+                  {/* Print KOT Button */}
+                  {["placed", "confirmed", "preparing", "ready"].includes(o.status) && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPrintKotOrder(o)}
+                      className="text-[10px] rounded-lg px-2.5 py-1 text-violet-400 border border-zinc-800 hover:bg-zinc-850 flex items-center gap-1.5 font-semibold"
+                      title="Print KOT for Chef"
+                    >
+                      <Printer className="w-3.5 h-3.5" />
+                      Print KOT
+                    </Button>
+                  )}
+
                   {/* Status advancer */}
                   {["placed", "confirmed", "preparing", "ready"].includes(o.status) && (
                     <Button
@@ -223,6 +250,46 @@ export default function Orders() {
           </tbody>
         </table>
       </div>
+      </div> {/* Close no-print */}
+
+      {/* KOT Print Layout (Only visible on print) */}
+      {printKotOrder && (
+        <div className="hidden print:block bg-white text-black p-6 font-mono text-xs w-[76mm] mx-auto">
+          <div className="text-center border-b border-black border-dashed pb-4 mb-4">
+            <h2 className="text-sm font-extrabold tracking-widest uppercase">KITCHEN ORDER TICKET</h2>
+            <span className="text-[10px] font-bold">Gourmet Garden</span>
+            <div className="text-[9px] mt-2 flex flex-col gap-0.5 text-left font-sans">
+              <div className="flex justify-between">
+                <span>TABLE: {(printKotOrder.tableId as any)?.label || "Table"}</span>
+                <span>KOT#: {printKotOrder._id.slice(-4).toUpperCase()}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>TIME: {new Date(printKotOrder.createdAt).toLocaleTimeString()}</span>
+                <span>DATE: {new Date(printKotOrder.createdAt).toLocaleDateString()}</span>
+              </div>
+              <div>STAFF: {user?.name}</div>
+            </div>
+          </div>
+
+          {/* Items List */}
+          <div className="flex flex-col gap-2 border-b border-black border-dashed pb-4 mb-4 text-xs font-bold">
+            <div className="flex justify-between border-b border-black pb-1 mb-1 text-[10px] text-[#6E6050] font-semibold uppercase font-sans">
+              <span>Item Description</span>
+              <span>Qty</span>
+            </div>
+            {printKotOrder.items.map((i: any, index: number) => (
+              <div key={index} className="flex justify-between items-start text-xs font-bold leading-tight">
+                <span>{i.name}</span>
+                <span className="font-mono">x{i.quantity}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="text-center text-[10px] tracking-widest uppercase font-semibold font-sans">
+            *** Sent to Kitchen ***
+          </div>
+        </div>
+      )}
 
       {/* Bill receipt Settlement Modal */}
       {billDetails && activeOrder && (
@@ -302,6 +369,6 @@ export default function Orders() {
           </div>
         </Modal>
       )}
-    </div>
+    </>
   );
 }

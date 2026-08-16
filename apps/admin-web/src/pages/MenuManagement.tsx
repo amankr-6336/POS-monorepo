@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useAuthStore } from "../store/useAuthStore";
 import { Card, Button, Input, Modal, Badge } from "@pos/ui";
 import { formatCurrency } from "@pos/utils";
-import { Plus, ToggleLeft, ToggleRight, AlertTriangle, Trash2, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { Plus, ToggleLeft, ToggleRight, AlertTriangle, Trash2, ArrowUpRight, ArrowDownRight, Pencil } from "lucide-react";
 
 const API_BASE_URL = "http://localhost:5000/api/v1";
 
@@ -38,6 +38,7 @@ export default function MenuManagement() {
   const [itemPrepStation, setItemPrepStation] = useState("main-kitchen");
   const [itemImageUrl, setItemImageUrl] = useState("");
   const [itemRecipe, setItemRecipe] = useState<{ ingredientId: string; quantity: number; unit: string }[]>([]);
+  const [editingItem, setEditingItem] = useState<any>(null);
 
   // Form states - Ingredient
   const [ingName, setIngName] = useState("");
@@ -112,13 +113,60 @@ export default function MenuManagement() {
     );
   };
 
-  const handleCreateMenuItem = async (e: React.FormEvent) => {
+  const handleOpenCreateItem = () => {
+    setEditingItem(null);
+    setItemName("");
+    setItemDesc("");
+    setItemPrice(0);
+    setItemCategoryId("");
+    setItemPrepStation("main-kitchen");
+    setItemImageUrl("");
+    setItemRecipe([]);
+    setItemOpen(true);
+  };
+
+  const handleOpenEditItem = (item: any) => {
+    setEditingItem(item);
+    setItemName(item.name);
+    setItemDesc(item.description || "");
+    setItemPrice(item.price);
+    setItemCategoryId(item.categoryId?._id || item.categoryId || "");
+    setItemPrepStation(item.prepStation || "main-kitchen");
+    setItemImageUrl(item.imageUrl || "");
+    setItemRecipe(
+      item.ingredients ? item.ingredients.map((r: any) => ({
+        ingredientId: r.ingredientId?._id || r.ingredientId,
+        quantity: r.quantity,
+        unit: r.unit
+      })) : []
+    );
+    setItemOpen(true);
+  };
+
+  const handleCloseItemModal = () => {
+    setItemOpen(false);
+    setEditingItem(null);
+    setItemName("");
+    setItemDesc("");
+    setItemPrice(0);
+    setItemCategoryId("");
+    setItemPrepStation("main-kitchen");
+    setItemImageUrl("");
+    setItemRecipe([]);
+  };
+
+  const handleSaveMenuItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!itemName || !itemCategoryId || itemPrice <= 0) return;
 
     try {
-      const res = await fetch(`${API_BASE_URL}/restaurants/${user?.restaurantId}/menu-items`, {
-        method: "POST",
+      const url = editingItem
+        ? `${API_BASE_URL}/menu-items/${editingItem._id}`
+        : `${API_BASE_URL}/restaurants/${user?.restaurantId}/menu-items`;
+      const method = editingItem ? "PATCH" : "POST";
+
+      const res = await fetch(url, {
+        method,
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${accessToken}`,
@@ -135,12 +183,7 @@ export default function MenuManagement() {
       });
 
       if (res.ok) {
-        setItemOpen(false);
-        setItemName("");
-        setItemDesc("");
-        setItemPrice(0);
-        setItemImageUrl("");
-        setItemRecipe([]);
+        handleCloseItemModal();
         fetchData();
       }
     } catch (err) {
@@ -254,10 +297,10 @@ export default function MenuManagement() {
           <h1 className="text-3xl font-black text-white tracking-tight">Menu & Inventory</h1>
           <p className="text-zinc-400 text-sm mt-1">Configure categories, items, and track raw ingredients</p>
         </div>
-        
+
         {/* Buttons based on active tab */}
         {activeTab === "items" && (
-          <Button onClick={() => setItemOpen(true)} className="flex items-center gap-1.5 rounded-xl font-bold py-2.5">
+          <Button onClick={handleOpenCreateItem} className="flex items-center gap-1.5 rounded-xl font-bold py-2.5">
             <Plus className="w-4 h-4" /> Add Menu Item
           </Button>
         )}
@@ -279,9 +322,8 @@ export default function MenuManagement() {
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`pb-3 font-bold text-sm tracking-wide capitalize relative border-b-2 transition-all ${
-              activeTab === tab ? "border-violet-500 text-white" : "border-transparent text-zinc-500 hover:text-zinc-300"
-            }`}
+            className={`pb-3 font-bold text-sm tracking-wide capitalize relative border-b-2 transition-all ${activeTab === tab ? "border-violet-500 text-black" : "border-transparent text-zinc-500 hover:text-zinc-300"
+              }`}
           >
             {tab === "items" ? "Menu Items" : tab}
           </button>
@@ -314,13 +356,20 @@ export default function MenuManagement() {
                   </div>
                   <p className="text-[10px] text-zinc-500 mt-1">{item.categoryId?.name}</p>
                   <p className="text-zinc-400 text-[11px] mt-1.5 line-clamp-2 leading-relaxed">{item.description}</p>
-                  
+
                   <div className="flex justify-between items-center mt-3 pt-2.5 border-t border-zinc-900">
                     <span className="font-extrabold text-violet-400 text-xs">{formatCurrency(item.price)}</span>
                     <div className="flex items-center gap-1.5">
                       <Badge variant={item.isOutOfStock ? "error" : "success"} className="py-0.5 px-2 text-[9px]">
                         {item.isOutOfStock ? "Sold Out" : "Active"}
                       </Badge>
+                      <button
+                        onClick={() => handleOpenEditItem(item)}
+                        className="p-1 hover:bg-zinc-805 rounded-lg text-zinc-500 hover:text-white"
+                        title="Edit Menu Item"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
                       <button
                         onClick={() => handleDeleteItem(item._id)}
                         className="p-1 hover:bg-zinc-800 rounded-lg text-zinc-600 hover:text-red-400"
@@ -383,7 +432,7 @@ export default function MenuManagement() {
                   const isLow = ing.currentStock <= ing.lowStockThreshold;
                   return (
                     <tr key={ing._id} className="hover:bg-zinc-900/10 transition-colors">
-                      <td className="p-4 font-bold text-white text-xs">{ing.name}</td>
+                      <td className="p-4 font-bold text-black text-xs">{ing.name}</td>
                       <td className="p-4 font-mono font-bold text-xs">
                         {ing.currentStock} {ing.unit}
                       </td>
@@ -546,8 +595,8 @@ export default function MenuManagement() {
       )}
 
       {/* MODAL: ADD MENU ITEM & RECIPE LINKING */}
-      <Modal isOpen={itemOpen} onClose={() => setItemOpen(false)} title="Create Menu Item">
-        <form onSubmit={handleCreateMenuItem} className="flex flex-col gap-4 max-h-[75vh] overflow-y-auto pr-1">
+      <Modal isOpen={itemOpen} onClose={handleCloseItemModal} title={editingItem ? "Edit Menu Item" : "Create Menu Item"} size="2xl">
+        <form onSubmit={handleSaveMenuItem} className="flex flex-col gap-4">
           <Input
             label="Dish Name"
             placeholder="Margherita Pizza, Tuscan Salad"
