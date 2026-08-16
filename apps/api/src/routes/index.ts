@@ -15,6 +15,7 @@ import * as billCtrl from "../controllers/bill.controller";
 import * as queryCtrl from "../controllers/query.controller";
 import * as leadCtrl from "../controllers/lead.controller";
 import * as restCtrl from "../controllers/restaurant.controller";
+import * as analyticsCtrl from "../controllers/analytics.controller";
 
 // Import Schemas
 import * as s from "@pos/schemas";
@@ -119,5 +120,14 @@ router.post("/bills/:id/settle", authStaff, requireRoles(["owner", "manager", "w
 router.post("/public/table-queries", authCustomer, queryCtrl.createTableQuery); // called by customer
 router.get("/table-queries", authStaff, requireRoles(["owner", "manager", "waiter"]), queryCtrl.getActiveQueries);
 router.patch("/table-queries/:id/resolve", authStaff, requireRoles(["owner", "manager", "waiter"]), queryCtrl.resolveTableQuery);
+
+// ==========================================
+// 13. ANALYTICS ROUTES
+// ==========================================
+router.get("/restaurants/:id/analytics/summary", authStaff, requireRoles(["owner", "manager"]), analyticsCtrl.getSummary);
+router.get("/restaurants/:id/analytics/revenue-chart", authStaff, requireRoles(["owner", "manager"]), analyticsCtrl.getRevenueChart);
+router.get("/restaurants/:id/analytics/popular-items", authStaff, requireRoles(["owner", "manager"]), analyticsCtrl.getPopularItems);
+router.get("/restaurants/:id/analytics/order-status", authStaff, requireRoles(["owner", "manager"]), analyticsCtrl.getOrderStatusBreakdown);
+router.get("/restaurants/:id/analytics/busy-hours", authStaff, requireRoles(["owner", "manager"]), analyticsCtrl.getBusyHours);
 
 export default router;
