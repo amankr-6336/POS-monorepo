@@ -3,7 +3,7 @@ import { useAuthStore } from "../store/useAuthStore";
 import { Card, Button, Input, Modal, Badge } from "@pos/ui";
 import { QrCode, RefreshCw, Plus, Users, Trash2 } from "lucide-react";
 
-const API_BASE_URL = "http://localhost:5000/api/v1";
+import { API_BASE_URL } from "../config";
 
 export default function Tables() {
   const { user, accessToken } = useAuthStore();

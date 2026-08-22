@@ -10,6 +10,7 @@ import KDS from "./pages/KDS";
 import Orders from "./pages/Orders";
 import Ratings from "./pages/Ratings";
 import { LayoutDashboard, TableProperties, ChefHat, ClipboardList, BookOpen, LogOut, Star } from "lucide-react";
+import { SOCKET_URL } from "./config";
 
 // Route guard for authenticated staff
 function PrivateRoute({ children }: { children: React.ReactNode }) {
@@ -25,7 +26,7 @@ function Layout() {
 
   useEffect(() => {
     if (!user?.restaurantId) return;
-    const socket = io("http://localhost:5000");
+    const socket = io(SOCKET_URL);
     socket.emit("join-restaurant", user.restaurantId);
 
     socket.on("rating:lowRatingAlert", (data: any) => {

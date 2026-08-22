@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/useAuthStore";
 import { Button, Input, Card } from "@pos/ui";
 
-const API_BASE_URL = "http://localhost:5000/api/v1";
+import { API_BASE_URL } from "../config";
 
 export default function Login() {
   const navigate = useNavigate();

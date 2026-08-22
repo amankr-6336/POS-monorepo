@@ -4,7 +4,7 @@ import { Button, Badge, Modal } from "@pos/ui";
 import { formatCurrency, formatDate } from "@pos/utils";
 import { Receipt, Check, ArrowRight, Printer, ShieldCheck, Trash } from "lucide-react";
 
-const API_BASE_URL = "http://localhost:5000/api/v1";
+import { API_BASE_URL } from "../config";
 
 export default function Orders() {
   const { user, accessToken } = useAuthStore();

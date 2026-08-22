@@ -16,7 +16,7 @@ import {
   Activity 
 } from "lucide-react";
 
-const API_BASE_URL = "http://localhost:5000/api/v1";
+import { API_BASE_URL, SOCKET_URL } from "../config";
 
 export default function Dashboard() {
   const { user, accessToken } = useAuthStore();
@@ -102,7 +102,7 @@ export default function Dashboard() {
     fetchRevenueChart(chartPeriod);
 
     // Socket.IO listeners
-    const socket = io("http://localhost:5000");
+    const socket = io(SOCKET_URL);
     socket.emit("join-restaurant", user.restaurantId);
 
     socket.on("tableQuery:new", (newQuery: any) => {
