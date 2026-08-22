@@ -4,7 +4,7 @@ import { Star, MessageSquare, CheckCircle, ArrowLeft, RefreshCw } from "lucide-r
 import { Button } from "@pos/ui";
 import { formatCurrency } from "@pos/utils";
 
-const API_BASE_URL = "http://localhost:5000/api/v1";
+import { API_BASE_URL } from "../config";
 
 interface RatingPromptProps {
   order: any;
