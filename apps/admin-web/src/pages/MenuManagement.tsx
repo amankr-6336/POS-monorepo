@@ -4,7 +4,7 @@ import { Card, Button, Input, Modal, Badge } from "@pos/ui";
 import { formatCurrency } from "@pos/utils";
 import { Plus, ToggleLeft, ToggleRight, AlertTriangle, Trash2, ArrowUpRight, ArrowDownRight, Pencil } from "lucide-react";
 
-const API_BASE_URL = "http://localhost:5000/api/v1";
+import { API_BASE_URL } from "../config";
 
 export default function MenuManagement() {
   const { user, accessToken } = useAuthStore();

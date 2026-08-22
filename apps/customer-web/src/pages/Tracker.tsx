@@ -5,6 +5,8 @@ import { useSessionStore } from "../store/useSessionStore";
 import { Button, Card, Badge } from "@pos/ui";
 import { formatCurrency, formatDate } from "@pos/utils";
 import { ChevronLeft, Check, Receipt, Bell, Utensils } from "lucide-react";
+import { AnimatePresence } from "framer-motion";
+import RatingPrompt from "../components/RatingPrompt";
 
 const API_BASE_URL = "http://localhost:5000/api/v1";
 
@@ -17,6 +19,25 @@ export default function Tracker() {
   const [bill, setBill] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [waiterCalled, setWaiterCalled] = useState(false);
+  
+  const [promptDismissed, setPromptDismissed] = useState(() => {
+    return sessionStorage.getItem(`rating_dismissed_${orderId}`) === "true";
+  });
+  const [showRating, setShowRating] = useState(false);
+
+  useEffect(() => {
+    if (order && (order.status === "served" || order.status === "billed") && !promptDismissed) {
+      setShowRating(true);
+    } else {
+      setShowRating(false);
+    }
+  }, [order?.status, promptDismissed]);
+
+  const handleCloseRating = () => {
+    sessionStorage.setItem(`rating_dismissed_${orderId}`, "true");
+    setPromptDismissed(true);
+    setShowRating(false);
+  };
 
   useEffect(() => {
     async function fetchOrderAndBill() {
@@ -288,6 +309,16 @@ export default function Tracker() {
           </Card>
         )}
       </main>
+
+      <AnimatePresence>
+        {showRating && (
+          <RatingPrompt
+            order={order}
+            customerToken={customerToken}
+            onClose={handleCloseRating}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

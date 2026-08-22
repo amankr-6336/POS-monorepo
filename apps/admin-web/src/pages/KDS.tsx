@@ -4,7 +4,7 @@ import { useAuthStore } from "../store/useAuthStore";
 import { Card, Button, Badge } from "@pos/ui";
 import { Play, Check, Flame, Clock } from "lucide-react";
 
-const API_BASE_URL = "http://localhost:5000/api/v1";
+import { API_BASE_URL, SOCKET_URL } from "../config";
 
 // Simple relative timer hook
 function TicketTimer({ startTime }: { startTime: string }) {
@@ -75,7 +75,7 @@ export default function KDS() {
   useEffect(() => {
     if (!user?.restaurantId || !selectedStation) return;
 
-    const socket = io("http://localhost:5000");
+    const socket = io(SOCKET_URL);
     
     // Join tenant + join specific kitchen station room
     socket.emit("join-station", { restaurantId: user.restaurantId, station: selectedStation });
