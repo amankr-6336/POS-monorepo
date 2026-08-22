@@ -145,3 +145,17 @@ export const leadCreateSchema = z.object({
   phone: z.string().min(10, "Phone number must be at least 10 digits"),
   message: z.string().min(5, "Message must be at least 5 characters"),
 });
+
+// Order Rating
+export const dishRatingSchema = z.object({
+  menuItemId: z.string().min(1, "MenuItem ID is required"),
+  rating: z.number().int().min(1).max(5, "Rating must be between 1 and 5"),
+  tags: z.array(z.string()).optional(),
+  comment: z.string().optional(),
+});
+
+export const orderRatingCreateSchema = z.object({
+  overallRating: z.number().int().min(1).max(5, "Overall rating must be between 1 and 5"),
+  overallComment: z.string().optional(),
+  dishRatings: z.array(dishRatingSchema).default([]),
+});

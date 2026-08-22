@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Link, Navigate, useLocation, useNavigate } from "react-router-dom";
+import io from "socket.io-client";
 import { useAuthStore } from "./store/useAuthStore";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
@@ -7,7 +8,8 @@ import Tables from "./pages/Tables";
 import MenuManagement from "./pages/MenuManagement";
 import KDS from "./pages/KDS";
 import Orders from "./pages/Orders";
-import { LayoutDashboard, TableProperties, ChefHat, ClipboardList, BookOpen, LogOut } from "lucide-react";
+import Ratings from "./pages/Ratings";
+import { LayoutDashboard, TableProperties, ChefHat, ClipboardList, BookOpen, LogOut, Star } from "lucide-react";
 
 // Route guard for authenticated staff
 function PrivateRoute({ children }: { children: React.ReactNode }) {
@@ -21,6 +23,24 @@ function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    if (!user?.restaurantId) return;
+    const socket = io("http://localhost:5000");
+    socket.emit("join-restaurant", user.restaurantId);
+
+    socket.on("rating:lowRatingAlert", (data: any) => {
+      try {
+        const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-84.wav");
+        audio.play();
+      } catch (e) {}
+      alert(`⚠️ LOW RATING ALERT: ${data.tableLabel} submitted a rating of ${data.overallRating} stars!\nComment: "${data.comment || 'No comment'}"`);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [user?.restaurantId]);
+
   const handleLogout = () => {
     clearAuth();
     navigate("/login");
@@ -31,6 +51,7 @@ function Layout() {
     { to: "/tables", label: "Tables", icon: <TableProperties className="w-4 h-4" /> },
     { to: "/menu-management", label: "Menu & Stock", icon: <BookOpen className="w-4 h-4" /> },
     { to: "/orders", label: "Orders & Bills", icon: <ClipboardList className="w-4 h-4" /> },
+    { to: "/ratings", label: "Ratings & Reviews", icon: <Star className="w-4 h-4" /> },
     { to: "/kds", label: "KDS Screen", icon: <ChefHat className="w-4 h-4" /> },
   ];
 
@@ -87,6 +108,7 @@ function Layout() {
           <Route path="/tables" element={<Tables />} />
           <Route path="/menu-management" element={<MenuManagement />} />
           <Route path="/orders" element={<Orders />} />
+          <Route path="/ratings" element={<Ratings />} />
           <Route path="/kds" element={<KDS />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>

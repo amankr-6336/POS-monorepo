@@ -16,6 +16,7 @@ import * as queryCtrl from "../controllers/query.controller";
 import * as leadCtrl from "../controllers/lead.controller";
 import * as restCtrl from "../controllers/restaurant.controller";
 import * as analyticsCtrl from "../controllers/analytics.controller";
+import * as ratingCtrl from "../controllers/rating.controller";
 
 // Import Schemas
 import * as s from "@pos/schemas";
@@ -129,5 +130,15 @@ router.get("/restaurants/:id/analytics/revenue-chart", authStaff, requireRoles([
 router.get("/restaurants/:id/analytics/popular-items", authStaff, requireRoles(["owner", "manager"]), analyticsCtrl.getPopularItems);
 router.get("/restaurants/:id/analytics/order-status", authStaff, requireRoles(["owner", "manager"]), analyticsCtrl.getOrderStatusBreakdown);
 router.get("/restaurants/:id/analytics/busy-hours", authStaff, requireRoles(["owner", "manager"]), analyticsCtrl.getBusyHours);
+
+// ==========================================
+// 14. RATINGS ROUTES
+// ==========================================
+router.post("/public/orders/:id/rating", authCustomer, validate(s.orderRatingCreateSchema), ratingCtrl.createOrUpdateRating);
+router.get("/public/orders/:id/rating", authCustomer, ratingCtrl.getRatingForOrder);
+router.get("/restaurants/:id/ratings", authStaff, requireRoles(["owner", "manager"]), ratingCtrl.getRatings);
+router.get("/restaurants/:id/ratings/overview", authStaff, requireRoles(["owner", "manager"]), ratingCtrl.getRatingsOverview);
+router.get("/menu-items/:id/ratings", authStaff, ratingCtrl.getMenuItemRatings);
+router.patch("/ratings/:id/resolve-followup", authStaff, requireRoles(["owner", "manager"]), ratingCtrl.resolveFollowUp);
 
 export default router;

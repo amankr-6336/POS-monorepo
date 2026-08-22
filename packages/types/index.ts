@@ -77,6 +77,8 @@ export interface MenuItem {
   isOutOfStock: boolean;         // explicit manual/auto flag
   prepStation?: "grill" | "tandoor" | "bar" | "dessert" | "main-kitchen"; // routes KOT to correct chef
   avgPrepTimeMinutes?: number;
+  avgRating?: number;
+  ratingCount?: number;
   createdAt?: string | Date;
   updatedAt?: string | Date;
 }
@@ -174,6 +176,29 @@ export interface TableQuery {
   resolvedAt?: Date | string;
   resolvedByStaffId?: string;
   status: "open" | "resolved";
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
+}
+
+export interface DishRating {
+  menuItemId: string;
+  rating: number; // 1-5
+  tags?: string[];
+  comment?: string;
+}
+
+export interface OrderRating {
+  _id?: string;
+  restaurantId: string;
+  orderId: string;
+  tableId: string;
+  customerId: string;
+  overallRating: number; // 1-5
+  overallComment?: string;
+  dishRatings: DishRating[];
+  flaggedForFollowUp: boolean;
+  resolvedByStaffId?: string;
+  resolvedAt?: string | Date;
   createdAt?: string | Date;
   updatedAt?: string | Date;
 }

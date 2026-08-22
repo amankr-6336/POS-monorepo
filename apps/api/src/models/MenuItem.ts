@@ -40,6 +40,8 @@ const MenuItemSchema = new Schema<MenuItem>(
       default: "main-kitchen",
     },
     avgPrepTimeMinutes: { type: Number },
+    avgRating: { type: Number, default: 0 },
+    ratingCount: { type: Number, default: 0 },
   },
   { timestamps: true }
 );
