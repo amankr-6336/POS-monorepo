@@ -8,7 +8,7 @@ import { ChevronLeft, Check, Receipt, Bell, Utensils } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
 import RatingPrompt from "../components/RatingPrompt";
 
-const API_BASE_URL = "http://localhost:5000/api/v1";
+import { API_BASE_URL, SOCKET_URL } from "../config";
 
 export default function Tracker() {
   const { orderId } = useParams<{ orderId: string }>();
@@ -71,7 +71,7 @@ export default function Tracker() {
     fetchOrderAndBill();
 
     // Sockets listener for state progression
-    const socket = io("http://localhost:5000");
+    const socket = io(SOCKET_URL);
     if (restaurant?.id) {
       socket.emit("join-restaurant", restaurant.id);
     }

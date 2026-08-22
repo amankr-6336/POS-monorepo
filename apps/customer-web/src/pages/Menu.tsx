@@ -7,7 +7,7 @@ import { Button, Card, Badge } from "@pos/ui";
 import { formatCurrency } from "@pos/utils";
 import { Bell, ShoppingBag, X, Minus, Plus, Trash, Sparkles } from "lucide-react";
 
-const API_BASE_URL = "http://localhost:5000/api/v1";
+import { API_BASE_URL, SOCKET_URL } from "../config";
 
 export default function Menu() {
   const navigate = useNavigate();
@@ -58,7 +58,7 @@ export default function Menu() {
     fetchMenu();
 
     // Sockets listener for stock status changes
-    const socket = io("http://localhost:5000");
+    const socket = io(SOCKET_URL);
     socket.emit("join-restaurant", restaurant.id);
 
     socket.on("menuItem:stockChanged", (data: any) => {
