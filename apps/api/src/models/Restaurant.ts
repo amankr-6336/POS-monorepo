@@ -23,6 +23,7 @@ const RestaurantSchema = new Schema<Restaurant>(
       default: "trial",
     },
     isActive: { type: Boolean, default: true },
+    tableSessionTimeoutMinutes: { type: Number, default: 180 },
   },
   { timestamps: true }
 );

@@ -40,6 +40,7 @@ export const restaurantSchema = z.object({
       close: z.string(),
     })
   ).optional(),
+  tableSessionTimeoutMinutes: z.number().int().positive().optional(),
 });
 
 // Table CRUD
@@ -117,9 +118,22 @@ export const orderItemInputSchema = z.object({
 
 export const orderCreateSchema = z.object({
   tableId: z.string().min(1, "Table ID is required"),
+  tableSessionId: z.string().optional(),
   customerId: z.string().min(1, "Customer ID is required"),
   items: z.array(orderItemInputSchema).min(1, "At least one item is required to place an order"),
   notes: z.string().optional(),
+});
+
+// Table Session Close
+export const tableSessionCloseSchema = z.object({
+  notes: z.string().optional(),
+});
+
+// Order Item Cancel
+export const orderItemCancelSchema = z.object({
+  menuItemId: z.string().optional(),
+  itemIndex: z.number().int().nonnegative().optional(),
+  reason: z.string().optional(),
 });
 
 // Order Status Transitions

@@ -57,6 +57,9 @@ router.post("/restaurants/:id/tables", authStaff, requireRoles(["owner", "manage
 router.patch("/tables/:tableId", authStaff, requireRoles(["owner", "manager", "waiter"]), validate(s.tableSchema.partial()), tableCtrl.updateTable);
 router.delete("/tables/:tableId", authStaff, requireRoles(["owner"]), tableCtrl.deleteTable);
 router.post("/tables/:tableId/regenerate-qr", authStaff, requireRoles(["owner", "manager"]), tableCtrl.regenerateTableQR);
+router.post("/tables/:tableId/close-session", authStaff, requireRoles(["owner", "manager", "waiter"]), tableCtrl.closeTableSession);
+router.post("/tables/:tableId/reset", authStaff, requireRoles(["owner", "manager", "waiter"]), tableCtrl.resetTable);
+router.get("/tables/:tableId/session", authStaff, tableCtrl.getTableSession);
 
 // Public table resolution for customer landing (PWA scan)
 router.get("/public/r/:slug/t/:qrToken", tableCtrl.resolveTableQR);
@@ -100,6 +103,9 @@ router.get("/restaurants/:id/orders", authStaff, orderCtrl.getOrders);
 router.get("/orders/:id", authStaff, orderCtrl.getOrderById);
 router.get("/public/orders/:id", authCustomer, orderCtrl.getOrderById); // customer status check
 router.patch("/orders/:id/status", authStaff, requireRoles(["owner", "manager", "waiter"]), validate(s.orderStatusUpdateSchema), orderCtrl.updateOrderStatus);
+router.post("/orders/:id/cancel-item", authStaff, requireRoles(["owner", "manager", "waiter", "chef"]), validate(s.orderItemCancelSchema), orderCtrl.cancelOrderItem);
+router.patch("/orders/:id/items/:itemId/cancel", authStaff, requireRoles(["owner", "manager", "waiter", "chef"]), orderCtrl.cancelOrderItem);
+router.post("/public/orders/:id/cancel-item", authCustomer, validate(s.orderItemCancelSchema), orderCtrl.cancelOrderItem);
 
 // ==========================================
 // 10. KOTS ROUTES
@@ -111,8 +117,11 @@ router.patch("/kots/:id/status", authStaff, requireRoles(["owner", "manager", "c
 // 11. BILLING ROUTES
 // ==========================================
 router.post("/orders/:orderId/generate-bill", authStaff, requireRoles(["owner", "manager", "waiter"]), billCtrl.generateBill);
+router.post("/sessions/:sessionId/generate-bill", authStaff, requireRoles(["owner", "manager", "waiter"]), billCtrl.generateBill);
 router.get("/orders/:orderId/bill", authStaff, billCtrl.getBillByOrderId);
 router.get("/public/orders/:orderId/bill", authCustomer, billCtrl.getBillByOrderId); // customer bill display
+router.get("/sessions/:sessionId/bill", authStaff, billCtrl.getSessionBill);
+router.get("/public/sessions/:sessionId/bill", authCustomer, billCtrl.getSessionBill);
 router.post("/bills/:id/settle", authStaff, requireRoles(["owner", "manager", "waiter"]), billCtrl.settleBillPayment);
 
 // ==========================================

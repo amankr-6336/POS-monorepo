@@ -4,7 +4,9 @@ import { Bill } from "@pos/types";
 const BillSchema = new Schema<Bill>(
   {
     restaurantId: { type: Schema.Types.ObjectId as any, ref: "Restaurant", required: true, index: true },
-    orderId: { type: Schema.Types.ObjectId as any, ref: "Order", required: true, index: true },
+    tableSessionId: { type: Schema.Types.ObjectId as any, ref: "TableSession", index: true },
+    orderId: { type: Schema.Types.ObjectId as any, ref: "Order", index: true },
+    orderIds: [{ type: Schema.Types.ObjectId as any, ref: "Order" }],
     tableLabel: { type: String, required: true },
     items: [
       {

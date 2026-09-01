@@ -3,6 +3,7 @@ import crypto from "crypto";
 import QRCode from "qrcode";
 import { TableModel } from "../models/Table";
 import { RestaurantModel } from "../models/Restaurant";
+import * as sessionService from "../services/session.service";
 
 const CLIENT_CUSTOMER_URL = process.env.CLIENT_CUSTOMER_URL || "http://localhost:5174";
 
@@ -10,7 +11,14 @@ export async function getTables(req: Request, res: Response) {
   const restaurantId = (req as any).user.restaurantId;
   try {
     const tables = await TableModel.find({ restaurantId }).sort({ label: 1 });
-    return res.status(200).json(tables);
+    // Check and auto-expire inactive sessions for tables
+    for (const table of tables) {
+      if (table.status === "occupied" && table.currentSessionId) {
+        await sessionService.checkAndExpireTableSession(table._id);
+      }
+    }
+    const updatedTables = await TableModel.find({ restaurantId }).sort({ label: 1 });
+    return res.status(200).json(updatedTables);
   } catch (error) {
     return res.status(500).json({ message: "Internal server error" });
   }
@@ -53,9 +61,30 @@ export async function createTable(req: Request, res: Response) {
 export async function updateTable(req: Request, res: Response) {
   const { tableId } = req.params;
   const restaurantId = (req as any).user.restaurantId;
+  const staffId = (req as any).user.id;
   const updates = req.body;
 
   try {
+    if (updates.status === "needs_cleaning") {
+      const { table } = await sessionService.closeTableSession(tableId, restaurantId, staffId);
+      if (!table) {
+        return res.status(404).json({ message: "Table not found" });
+      }
+      return res.status(200).json(table);
+    }
+
+    if (updates.status === "available") {
+      const table = await sessionService.resetTableToAvailable(tableId, restaurantId, staffId);
+      if (!table) {
+        return res.status(404).json({ message: "Table not found" });
+      }
+      return res.status(200).json(table);
+    }
+
+    if (updates.status === "occupied") {
+      await sessionService.getOrOpenActiveSession(tableId, restaurantId);
+    }
+
     const table = await TableModel.findOneAndUpdate(
       { _id: tableId, restaurantId },
       updates,
@@ -118,7 +147,8 @@ export async function regenerateTableQR(req: Request, res: Response) {
 }
 
 /**
- * Resolves QR scanned table parameters for the Customer Web App PWA
+ * Resolves QR scanned table parameters for the Customer Web App PWA.
+ * Opens or retrieves an active TableSession automatically.
  */
 export async function resolveTableQR(req: Request, res: Response) {
   const { slug, qrToken } = req.params;
@@ -134,21 +164,95 @@ export async function resolveTableQR(req: Request, res: Response) {
       return res.status(404).json({ message: "Table token is invalid or has been regenerated" });
     }
 
+    // Automatically open or reuse an active table session
+    const { session, isNew } = await sessionService.getOrOpenActiveSession(table._id, restaurant._id);
+    const updatedTable = await TableModel.findById(table._id);
+
     return res.status(200).json({
       restaurant: {
         id: restaurant._id,
         name: restaurant.name,
         logoUrl: restaurant.logoUrl,
         slug: restaurant.slug,
+        tableSessionTimeoutMinutes: restaurant.tableSessionTimeoutMinutes || 180,
       },
       table: {
-        id: table._id,
+        id: updatedTable?._id || table._id,
         label: table.label,
         location: table.location,
-        status: table.status,
+        status: updatedTable?.status || "occupied",
+        currentSessionId: session._id,
+      },
+      session: {
+        id: session._id,
+        status: session.status,
+        openedAt: session.openedAt,
+        isNew,
       },
     });
   } catch (error) {
+    console.error("Error resolving table QR:", error);
     return res.status(500).json({ message: "Error resolving table QR" });
+  }
+}
+
+/**
+ * Staff explicitly closes active table session (moves table to needs_cleaning)
+ */
+export async function closeTableSession(req: Request, res: Response) {
+  const { tableId } = req.params;
+  const restaurantId = (req as any).user.restaurantId;
+  const staffId = (req as any).user.id;
+
+  try {
+    const { session, table } = await sessionService.closeTableSession(tableId, restaurantId, staffId);
+    if (!table) {
+      return res.status(404).json({ message: "Table not found" });
+    }
+
+    return res.status(200).json({
+      message: "Table session closed successfully",
+      session,
+      table,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: "Failed to close table session" });
+  }
+}
+
+/**
+ * Staff resets table to available
+ */
+export async function resetTable(req: Request, res: Response) {
+  const { tableId } = req.params;
+  const restaurantId = (req as any).user.restaurantId;
+  const staffId = (req as any).user.id;
+
+  try {
+    const table = await sessionService.resetTableToAvailable(tableId, restaurantId, staffId);
+    if (!table) {
+      return res.status(404).json({ message: "Table not found" });
+    }
+
+    return res.status(200).json({
+      message: "Table reset to available successfully",
+      table,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: "Failed to reset table" });
+  }
+}
+
+/**
+ * Gets the active table session for a table
+ */
+export async function getTableSession(req: Request, res: Response) {
+  const { tableId } = req.params;
+
+  try {
+    const session = await sessionService.getActiveSessionForTable(tableId);
+    return res.status(200).json(session);
+  } catch (error) {
+    return res.status(500).json({ message: "Failed to get table session" });
   }
 }
