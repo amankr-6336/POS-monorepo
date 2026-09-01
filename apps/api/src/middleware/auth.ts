@@ -14,6 +14,7 @@ export interface AuthenticatedRequest extends Request {
     customerId: string;
     tableId: string;
     restaurantId: string;
+    tableSessionId?: string;
   };
 }
 
@@ -94,6 +95,7 @@ export function authCustomer(req: AuthenticatedRequest, res: Response, next: Nex
       customerId: string;
       tableId: string;
       restaurantId: string;
+      tableSessionId?: string;
     };
 
     req.customer = decoded;

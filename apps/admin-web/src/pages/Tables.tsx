@@ -230,7 +230,7 @@ export default function Tables() {
             </div>
 
             <div className="w-full flex flex-col gap-2">
-              <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Quick Status Actions</span>
+              <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Session & Table Status</span>
               <div className="grid grid-cols-2 gap-2">
                 <Button
                   variant="outline"
@@ -238,15 +238,15 @@ export default function Tables() {
                   onClick={() => handleUpdateStatus(selectedTable._id, "available")}
                   className={`text-[10px] ${selectedTable.status === "available" ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : ""}`}
                 >
-                  Mark Available
+                  Reset / Mark Available
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handleUpdateStatus(selectedTable._id, "needs_cleaning")}
-                  className={`text-[10px] ${selectedTable.status === "needs_cleaning" ? "bg-zinc-800 border-zinc-700 text-zinc-300" : ""}`}
+                  className={`text-[10px] ${selectedTable.status === "needs_cleaning" ? "bg-amber-500/10 border-amber-500/20 text-amber-300" : ""}`}
                 >
-                  Needs Cleaning
+                  Close Session (Needs Cleaning)
                 </Button>
               </div>
             </div>

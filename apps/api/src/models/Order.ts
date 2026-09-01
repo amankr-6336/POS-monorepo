@@ -19,6 +19,7 @@ const OrderSchema = new Schema<Order>(
   {
     restaurantId: { type: Schema.Types.ObjectId as any, ref: "Restaurant", required: true, index: true },
     tableId: { type: Schema.Types.ObjectId as any, ref: "Table", required: true, index: true },
+    tableSessionId: { type: Schema.Types.ObjectId as any, ref: "TableSession", index: true },
     customerId: { type: Schema.Types.ObjectId as any, ref: "Customer", required: true },
     items: [OrderItemSchema],
     status: {

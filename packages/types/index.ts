@@ -10,6 +10,7 @@ export interface Restaurant {
   operatingHours?: { day: string; open: string; close: string }[];
   subscriptionPlan: "trial" | "basic" | "pro";
   isActive: boolean;
+  tableSessionTimeoutMinutes?: number;
   createdAt?: string | Date;
   updatedAt?: string | Date;
 }
@@ -23,6 +24,7 @@ export interface Table {
   qrCodeUrl: string;             // generated image pointing to signed customer URL
   qrToken: string;               // signed/unique token embedded in the QR URL
   status: "available" | "occupied" | "reserved" | "needs_cleaning";
+  currentSessionId?: string | null;
   currentOrderId?: string;
   createdAt?: string | Date;
   updatedAt?: string | Date;
@@ -109,6 +111,7 @@ export interface Order {
   _id: string;
   restaurantId: string;
   tableId: string;
+  tableSessionId?: string;
   customerId: string;
   items: OrderItem[];
   status: "placed" | "confirmed" | "preparing" | "ready" | "served" | "billed" | "cancelled";
@@ -140,7 +143,9 @@ export interface KOT {
 export interface Bill {
   _id: string;
   restaurantId: string;
-  orderId: string;
+  tableSessionId?: string;
+  orderId?: string;
+  orderIds?: string[];
   tableLabel: string;
   items: OrderItem[];
   subtotal: number;
@@ -202,3 +207,17 @@ export interface OrderRating {
   createdAt?: string | Date;
   updatedAt?: string | Date;
 }
+
+export interface TableSession {
+  _id: string;
+  tableId: string;
+  restaurantId: string;
+  status: "active" | "closed";
+  openedAt: Date | string;
+  closedAt?: Date | string | null;
+  closedByStaffId?: string | null;
+  lastActivityAt?: Date | string;
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
+}
+

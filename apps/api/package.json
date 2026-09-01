@@ -6,7 +6,10 @@
     "dev": "nodemon src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "seed": "ts-node src/seed.ts"
+    "seed": "ts-node src/seed.ts",
+    "test:sessions": "ts-node src/test-sessions.ts",
+    "test:ratings": "ts-node src/test-ratings.ts",
+    "test:multi-orders": "ts-node src/test-multi-orders.ts"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

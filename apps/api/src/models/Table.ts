@@ -14,6 +14,7 @@ const TableSchema = new Schema<Table>(
       enum: ["available", "occupied", "reserved", "needs_cleaning"],
       default: "available",
     },
+    currentSessionId: { type: Schema.Types.ObjectId as any, ref: "TableSession", default: null },
     currentOrderId: { type: String },
   },
   { timestamps: true }
