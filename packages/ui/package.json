@@ -8,6 +8,8 @@
     "react-dom": "^18.0.0"
   },
   "dependencies": {
+    "@pos/types": "workspace:*",
+    "@pos/utils": "workspace:*",
     "clsx": "^2.1.1",
     "tailwind-merge": "^2.3.0",
     "lucide-react": "^0.379.0"

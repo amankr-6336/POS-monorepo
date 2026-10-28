@@ -20,7 +20,7 @@ const CLIENT_CUSTOMER_URL = process.env.CLIENT_CUSTOMER_URL || "http://localhost
 async function seed() {
   const uri = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/pos";
   console.log("Seeding database at:", uri);
-  
+
   try {
     await mongoose.connect(uri);
 
@@ -53,12 +53,16 @@ async function seed() {
 
     // 2. Create Staff Accounts
     const passwordHash = bcrypt.hashSync("password", 10);
-    
+    const pinHashOwner = bcrypt.hashSync("1111", 10);
+    const pinHashWaiter = bcrypt.hashSync("1234", 10);
+    const pinHashChef = bcrypt.hashSync("2222", 10);
+
     const owner = new StaffUserModel({
       restaurantId: restaurant._id,
       name: "Aman Owner",
       email: "owner@gourmet.com",
       passwordHash,
+      pinHash: pinHashOwner,
       role: "owner",
       isActive: true,
     });
@@ -69,6 +73,7 @@ async function seed() {
       name: "Chef Mario",
       email: "chef@gourmet.com",
       passwordHash,
+      pinHash: pinHashChef,
       role: "chef",
       assignedStation: "main-kitchen",
       isActive: true,
@@ -80,11 +85,12 @@ async function seed() {
       name: "Sarah Waiter",
       email: "waiter@gourmet.com",
       passwordHash,
+      pinHash: pinHashWaiter,
       role: "waiter",
       isActive: true,
     });
     await waiter.save();
-    console.log("Seeded Staff Users (password is 'password').");
+    console.log("Seeded Staff Users (password: 'password', PINs: Owner 1111, Waiter 1234, Chef 2222).");
 
     // 3. Create Ingredients (Inventory)
     const pizzaCrust = new IngredientModel({
@@ -210,6 +216,49 @@ async function seed() {
         { ingredientId: paneer._id, quantity: 200, unit: "g" },
         { ingredientId: tomatoSauce._id, quantity: 50, unit: "ml" },
       ],
+      variantGroups: [
+        {
+          name: "Portion Size",
+          options: [
+            { name: "Half Portion (4 pcs)", priceDelta: 0 },
+            {
+              name: "Full Portion (8 pcs)",
+              priceDelta: 6.00,
+              ingredientOverrides: [
+                { ingredientId: paneer._id.toString(), quantity: 400, unit: "g" },
+                { ingredientId: tomatoSauce._id.toString(), quantity: 100, unit: "ml" },
+              ],
+            },
+          ],
+        },
+      ],
+      modifierGroups: [
+        {
+          name: "Spice Level",
+          multiSelect: false,
+          options: [
+            { name: "Mild Mint", priceDelta: 0 },
+            { name: "Spicy Tandoori", priceDelta: 0 },
+            { name: "Extra Fiery", priceDelta: 0.50 },
+          ],
+        },
+        {
+          name: "Extra Toppings",
+          multiSelect: true,
+          options: [
+            {
+              name: "Extra Grilled Paneer",
+              priceDelta: 3.00,
+              ingredients: [{ ingredientId: paneer._id.toString(), quantity: 100, unit: "g" }],
+            },
+            {
+              name: "Melted Cheese Drizzle",
+              priceDelta: 1.50,
+              ingredients: [{ ingredientId: cheese._id.toString(), quantity: 40, unit: "g" }],
+            },
+          ],
+        },
+      ],
       isAvailable: true,
       isOutOfStock: false,
       prepStation: "grill",
@@ -233,6 +282,54 @@ async function seed() {
         { ingredientId: cheese._id, quantity: 150, unit: "g" },
         { ingredientId: tomatoSauce._id, quantity: 100, unit: "ml" },
         { ingredientId: basil._id, quantity: 4, unit: "pcs" },
+      ],
+      variantGroups: [
+        {
+          name: "Size",
+          options: [
+            { name: "Regular (10\")", priceDelta: 0 },
+            {
+              name: "Large (14\")",
+              priceDelta: 5.50,
+              ingredientOverrides: [
+                { ingredientId: pizzaCrust._id.toString(), quantity: 1, unit: "pcs" },
+                { ingredientId: cheese._id.toString(), quantity: 240, unit: "g" },
+                { ingredientId: tomatoSauce._id.toString(), quantity: 160, unit: "ml" },
+                { ingredientId: basil._id.toString(), quantity: 6, unit: "pcs" },
+              ],
+            },
+          ],
+        },
+      ],
+      modifierGroups: [
+        {
+          name: "Crust Selection",
+          multiSelect: false,
+          options: [
+            { name: "Thin & Crispy", priceDelta: 0 },
+            {
+              name: "Cheese Burst Stuffed Crust",
+              priceDelta: 2.99,
+              ingredients: [{ ingredientId: cheese._id.toString(), quantity: 80, unit: "g" }],
+            },
+          ],
+        },
+        {
+          name: "Add-ons",
+          multiSelect: true,
+          options: [
+            {
+              name: "Extra Fresh Mozzarella",
+              priceDelta: 2.00,
+              ingredients: [{ ingredientId: cheese._id.toString(), quantity: 60, unit: "g" }],
+            },
+            {
+              name: "Fresh Basil Leaves",
+              priceDelta: 0.75,
+              ingredients: [{ ingredientId: basil._id.toString(), quantity: 4, unit: "pcs" }],
+            },
+          ],
+        },
       ],
       isAvailable: true,
       isOutOfStock: false,
@@ -292,7 +389,7 @@ async function seed() {
 
     // 8. Seed Historical Orders & Bills (last 30 days)
     const menuItems = [garlicBread, paneerTikka, margherita];
-    
+
     // Generate ~120 historical orders over the last 30 days
     const totalMockOrders = 120;
     const ordersToInsert = [];
@@ -305,10 +402,10 @@ async function seed() {
       const cust = customers[Math.floor(Math.random() * customers.length)];
       // Pick random table
       const tbl = tables[Math.floor(Math.random() * tables.length)];
-      
+
       // Determine date: distribute evenly or with weekend clusters
       const daysAgo = Math.floor(Math.random() * 30);
-      
+
       // Hour of day: peak around lunch (12-14) and dinner (19-21)
       let hour = 12;
       const randType = Math.random();
@@ -319,7 +416,7 @@ async function seed() {
       } else {
         hour = 8 + Math.floor(Math.random() * 14); // 8 to 22
       }
-      
+
       const minute = Math.floor(Math.random() * 60);
       const placedDate = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
       placedDate.setHours(hour, minute, 0, 0);
@@ -398,7 +495,7 @@ async function seed() {
           updatedAt: placedDate,
         });
         billsToInsert.push(bill);
-        
+
         // Update customer spending
         cust.totalSpend = parseFloat((cust.totalSpend + total).toFixed(2));
       }
@@ -406,7 +503,7 @@ async function seed() {
 
     await OrderModel.insertMany(ordersToInsert);
     await BillModel.insertMany(billsToInsert);
-    
+
     // Save updated customer total spendings
     for (const cust of customers) {
       await cust.save();

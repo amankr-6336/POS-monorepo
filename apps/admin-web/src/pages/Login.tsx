@@ -42,6 +42,8 @@ export default function Login() {
       // Redirect based on role
       if (data.user.role === "chef") {
         navigate("/kds");
+      } else if (data.user.role === "waiter") {
+        navigate("/tables");
       } else {
         navigate("/dashboard");
       }

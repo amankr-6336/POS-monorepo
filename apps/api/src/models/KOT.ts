@@ -17,6 +17,25 @@ const KOTSchema = new Schema<KOT>(
         menuItemName: { type: String, required: true },
         quantity: { type: Number, required: true },
         specialInstructions: { type: String, default: "" },
+        selectedVariant: {
+          groupName: { type: String },
+          optionName: { type: String },
+          priceDelta: { type: Number, default: 0 },
+        },
+        selectedVariants: [
+          {
+            groupName: { type: String },
+            optionName: { type: String },
+            priceDelta: { type: Number, default: 0 },
+          },
+        ],
+        selectedModifiers: [
+          {
+            groupName: { type: String },
+            optionName: { type: String },
+            priceDelta: { type: Number, default: 0 },
+          },
+        ],
       },
     ],
     status: {

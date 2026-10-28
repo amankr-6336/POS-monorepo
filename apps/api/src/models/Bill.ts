@@ -14,6 +14,26 @@ const BillSchema = new Schema<Bill>(
         name: { type: String, required: true },
         price: { type: Number, required: true },
         quantity: { type: Number, required: true },
+        specialInstructions: { type: String },
+        selectedVariant: {
+          groupName: { type: String },
+          optionName: { type: String },
+          priceDelta: { type: Number, default: 0 },
+        },
+        selectedVariants: [
+          {
+            groupName: { type: String },
+            optionName: { type: String },
+            priceDelta: { type: Number, default: 0 },
+          },
+        ],
+        selectedModifiers: [
+          {
+            groupName: { type: String },
+            optionName: { type: String },
+            priceDelta: { type: Number, default: 0 },
+          },
+        ],
       },
     ],
     subtotal: { type: Number, required: true },

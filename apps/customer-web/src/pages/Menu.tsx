@@ -3,9 +3,9 @@ import { useNavigate } from "react-router-dom";
 import io from "socket.io-client";
 import { useSessionStore } from "../store/useSessionStore";
 import { useCartStore } from "../store/useCartStore";
-import { Button, Card, Badge } from "@pos/ui";
+import { Button, Card, ItemCustomizerModal, CartDrawer } from "@pos/ui";
 import { formatCurrency } from "@pos/utils";
-import { Bell, ShoppingBag, X, Minus, Plus, Trash, Sparkles } from "lucide-react";
+import { Bell, ShoppingBag, Plus, Minus } from "lucide-react";
 
 import { API_BASE_URL, SOCKET_URL } from "../config";
 
@@ -21,6 +21,9 @@ export default function Menu() {
   
   const [waiterCalled, setWaiterCalled] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Customization Modal states
+  const [customizingItem, setCustomizingItem] = useState<any | null>(null);
 
   // Cart totals
   const subtotal = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
@@ -113,6 +116,9 @@ export default function Menu() {
             menuItemId: i.menuItemId,
             quantity: i.quantity,
             specialInstructions: i.specialInstructions,
+            selectedVariant: i.selectedVariant,
+            selectedVariants: i.selectedVariants,
+            selectedModifiers: i.selectedModifiers,
           })),
         }),
       });
@@ -129,6 +135,10 @@ export default function Menu() {
     } catch (err: any) {
       alert(err.message || "Something went wrong.");
     }
+  };
+
+  const handleOpenCustomize = (item: any) => {
+    setCustomizingItem(item);
   };
 
   const filteredItems = menuItems.filter((item) => {
@@ -205,9 +215,26 @@ export default function Menu() {
         {filteredItems.map((item) => {
           const isItemOutOfStock = item.isOutOfStock || !item.isAvailable;
           const cartQty = items.find((i) => i.menuItemId === item._id)?.quantity || 0;
+          const hasVariantsOrModifiers =
+            (item.variantGroups && item.variantGroups.length > 0 && item.variantGroups.some((g: any) => g.options?.length > 0)) ||
+            (item.modifierGroups && item.modifierGroups.length > 0 && item.modifierGroups.some((g: any) => g.options?.length > 0));
+
+          const totalItemCartCount = items
+            .filter((i) => i.menuItemId === item._id)
+            .reduce((sum, i) => sum + i.quantity, 0);
 
           return (
-            <Card key={item._id} className="flex gap-4 p-4 items-start relative bg-zinc-900/50 hover:bg-zinc-900 transition-colors">
+            <Card
+              key={item._id}
+              onClick={() => {
+                if (!isItemOutOfStock && hasVariantsOrModifiers) {
+                  handleOpenCustomize(item);
+                }
+              }}
+              className={`flex gap-4 p-4 items-start relative bg-zinc-900/50 hover:bg-zinc-900 transition-colors ${
+                !isItemOutOfStock && hasVariantsOrModifiers ? "cursor-pointer" : ""
+              }`}
+            >
               {item.imageUrl && (
                 <div className="relative w-24 h-24 rounded-xl overflow-hidden shrink-0 border border-zinc-800 bg-zinc-950">
                   <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
@@ -233,15 +260,66 @@ export default function Menu() {
                         <span className="w-1 h-1 bg-rose-500 rounded-full"></span>
                       </span>
                     )}
+                    {hasVariantsOrModifiers && (
+                      <span className="text-[9px] font-bold text-violet-400 bg-violet-500/10 border border-violet-500/20 px-1.5 py-0.2 rounded">
+                        Customizable
+                      </span>
+                    )}
                   </div>
                   <p className="text-zinc-400 text-xs mt-1.5 line-clamp-2 leading-relaxed font-light">{item.description}</p>
+
+                  {/* Variant options preview chip */}
+                  {item.variantGroups && item.variantGroups.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                      {item.variantGroups.map((vg: any, vIdx: number) => (
+                        <div
+                          key={vIdx}
+                          className="flex items-center gap-1 text-[10px] bg-violet-950/40 border border-violet-800/40 text-violet-300 px-2 py-0.5 rounded-md"
+                        >
+                          <span className="font-semibold text-violet-400">{vg.name}:</span>
+                          <span className="text-zinc-300 font-medium">{vg.options?.map((o: any) => o.name).join(" • ")}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Modifier preview chip */}
+                  {item.modifierGroups && item.modifierGroups.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-1 mt-1.5">
+                      {item.modifierGroups.map((mg: any, mIdx: number) => (
+                        <span
+                          key={mIdx}
+                          className="text-[9px] text-zinc-400 bg-zinc-900 border border-zinc-800 px-1.5 py-0.5 rounded"
+                        >
+                          +{mg.name}: {mg.options?.map((o: any) => o.name).join(", ")}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex items-center justify-between mt-3 pt-2 border-t border-zinc-900/40">
-                  <span className="font-extrabold text-violet-400 text-sm">{formatCurrency(item.price)}</span>
+                  <span className="font-extrabold text-violet-400 text-sm">
+                    {hasVariantsOrModifiers ? `From ${formatCurrency(item.price)}` : formatCurrency(item.price)}
+                  </span>
                   
                   {isItemOutOfStock ? (
                     <span className="text-xs text-zinc-500 font-semibold px-2.5 py-1 bg-zinc-950 rounded-lg">Unavailable</span>
+                  ) : hasVariantsOrModifiers ? (
+                    <div className="flex items-center gap-1.5">
+                      {totalItemCartCount > 0 && (
+                        <span className="text-[10px] font-bold text-violet-300 bg-violet-950/70 border border-violet-800/70 px-2 py-1 rounded-lg">
+                          {totalItemCartCount} in cart
+                        </span>
+                      )}
+                      <Button
+                        size="sm"
+                        onClick={() => handleOpenCustomize(item)}
+                        className="rounded-lg px-3 py-1.5 text-xs font-semibold"
+                      >
+                        {totalItemCartCount > 0 ? "+ Add" : "Customize"}
+                      </Button>
+                    </div>
                   ) : cartQty > 0 ? (
                     <div className="flex items-center gap-2 bg-zinc-800 border border-zinc-700/50 rounded-xl p-0.5 shadow-inner">
                       <button
@@ -297,104 +375,28 @@ export default function Menu() {
         </div>
       )}
 
-      {/* Cart Drawer Overlay */}
-      {cartOpen && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end no-print">
-          {/* Backdrop */}
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setCartOpen(false)} />
+      {/* Shared Cart Drawer */}
+      <CartDrawer
+        isOpen={cartOpen}
+        onClose={() => setCartOpen(false)}
+        items={items}
+        onUpdateQuantity={updateQuantity}
+        onUpdateInstructions={updateInstructions}
+        onSubmit={handlePlaceOrder}
+        title="Your Cart"
+        submitLabel="Place Kitchen Order"
+      />
 
-          {/* Drawer Content */}
-          <div className="relative bg-zinc-950 border-t border-zinc-800 rounded-t-3xl max-h-[85vh] flex flex-col w-full max-w-md mx-auto shadow-2xl overflow-hidden z-10">
-            {/* Header */}
-            <div className="px-5 py-4 border-b border-zinc-900 flex items-center justify-between bg-zinc-900/30">
-              <div className="flex items-center gap-2">
-                <h3 className="font-bold text-white text-lg">Your Cart</h3>
-                <Badge variant="info">{items.length}</Badge>
-              </div>
-              <button
-                onClick={() => setCartOpen(false)}
-                className="p-1 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-white"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Item list */}
-            <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-4">
-              {items.map((item) => (
-                <div key={item.menuItemId} className="flex gap-4 p-3 bg-zinc-900/40 rounded-2xl border border-zinc-900/80">
-                  {item.imageUrl && (
-                    <img src={item.imageUrl} alt={item.name} className="w-12 h-12 rounded-xl object-cover shrink-0 border border-zinc-800" />
-                  )}
-                  <div className="flex-1 flex flex-col gap-1.5">
-                    <div className="flex justify-between items-start">
-                      <h4 className="text-sm font-bold text-white">{item.name}</h4>
-                      <span className="text-sm font-extrabold text-violet-400">{formatCurrency(item.price * item.quantity)}</span>
-                    </div>
-
-                    {/* Special Instruction Input */}
-                    <div className="mt-1">
-                      <input
-                        type="text"
-                        placeholder="Add cooking notes (e.g. less spicy)..."
-                        value={item.specialInstructions || ""}
-                        onChange={(e) => updateInstructions(item.menuItemId, e.target.value)}
-                        className="w-full bg-zinc-950 border border-zinc-900 hover:border-zinc-800 rounded-lg px-2.5 py-1.5 text-[10px] text-zinc-300 placeholder-zinc-600 focus:outline-none focus:border-violet-500 transition-colors"
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between mt-1">
-                      <button
-                        onClick={() => updateQuantity(item.menuItemId, 0)}
-                        className="text-xs text-zinc-500 hover:text-red-400 flex items-center gap-1 transition-colors"
-                      >
-                        <Trash className="w-3.5 h-3.5" /> Remove
-                      </button>
-                      <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800 rounded-xl p-0.5">
-                        <button
-                          onClick={() => updateQuantity(item.menuItemId, item.quantity - 1)}
-                          className="p-1 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white"
-                        >
-                          <Minus className="w-3 h-3" />
-                        </button>
-                        <span className="text-xs font-bold text-white w-4 text-center">{item.quantity}</span>
-                        <button
-                          onClick={() => updateQuantity(item.menuItemId, item.quantity + 1)}
-                          className="p-1 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white"
-                        >
-                          <Plus className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Footer Summary */}
-            <div className="p-5 border-t border-zinc-900 bg-zinc-900/20">
-              <div className="flex flex-col gap-2 mb-4">
-                <div className="flex justify-between text-zinc-400 text-xs">
-                  <span>Subtotal</span>
-                  <span className="font-semibold">{formatCurrency(subtotal)}</span>
-                </div>
-                <div className="flex justify-between text-zinc-400 text-xs font-light">
-                  <span>Tax (5% GST included in final bill)</span>
-                  <span>{formatCurrency(subtotal * 0.05)}</span>
-                </div>
-                <div className="flex justify-between text-white font-extrabold text-base pt-2 border-t border-zinc-900/60 mt-1">
-                  <span>Order Total</span>
-                  <span className="text-violet-400">{formatCurrency(subtotal + subtotal * 0.05)}</span>
-                </div>
-              </div>
-
-              <Button onClick={handlePlaceOrder} className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold shadow-lg shadow-violet-500/10">
-                <Sparkles className="w-4 h-4" /> Place Kitchen Order
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Shared Item Customizer Modal */}
+      <ItemCustomizerModal
+        item={customizingItem}
+        isOpen={!!customizingItem}
+        onClose={() => setCustomizingItem(null)}
+        onConfirm={(customized) => {
+          addToCart(customized);
+          setCustomizingItem(null);
+        }}
+      />
     </div>
   );
 }

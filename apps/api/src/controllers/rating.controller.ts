@@ -32,9 +32,13 @@ export async function createOrUpdateRating(req: Request, res: Response) {
 
     // Secure checking: Order must match the customer session
     const oTableId = (order.tableId as any)._id ? (order.tableId as any)._id.toString() : order.tableId.toString();
-    const oCustomerId = (order.customerId as any)._id ? (order.customerId as any)._id.toString() : order.customerId.toString();
+    const oCustomerId = order.customerId
+      ? ((order.customerId as any)._id
+        ? (order.customerId as any)._id.toString()
+        : order.customerId.toString())
+      : null;
 
-    if (oTableId !== customer.tableId || oCustomerId !== customer.customerId) {
+    if (oTableId !== customer.tableId || (oCustomerId && oCustomerId !== customer.customerId)) {
       await session.abortTransaction();
       session.endSession();
       return res.status(403).json({ message: "Access forbidden: order does not belong to this table/customer session" });

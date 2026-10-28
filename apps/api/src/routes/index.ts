@@ -17,6 +17,7 @@ import * as leadCtrl from "../controllers/lead.controller";
 import * as restCtrl from "../controllers/restaurant.controller";
 import * as analyticsCtrl from "../controllers/analytics.controller";
 import * as ratingCtrl from "../controllers/rating.controller";
+import * as auditCtrl from "../controllers/audit.controller";
 
 // Import Schemas
 import * as s from "@pos/schemas";
@@ -41,25 +42,29 @@ function createTenantSanityCheck(req: any, res: any, next: any) {
 router.post("/auth/login", validate(s.loginSchema), authCtrl.loginStaff);
 router.post("/auth/refresh", authCtrl.refreshStaffToken);
 router.post("/auth/logout", authCtrl.logoutStaff);
+router.post("/auth/set-pin", authStaff, validate(s.staffSetPinSchema), authCtrl.setStaffPin);
+router.post("/auth/switch-pin", authStaff, validate(s.staffPinSwitchSchema), authCtrl.switchStaffPin);
 
 // ==========================================
 // 3. STAFF PROFILE & MANAGEMENT
 // ==========================================
 router.get("/restaurants/:id", authStaff, restCtrl.getRestaurantById);
+router.get("/restaurants/:id/staff", authStaff, authCtrl.getRestaurantStaffList);
 router.patch("/restaurants/:id", authStaff, validate(s.restaurantSchema), restCtrl.updateRestaurant);
 router.post("/auth/register-staff", authStaff, requireRoles(["owner", "manager"]), validate(s.staffRegisterSchema), authCtrl.registerStaff);
+
 
 // ==========================================
 // 4. TABLE & QR MANAGEMENT ROUTES
 // ==========================================
-router.get("/restaurants/:id/tables", authStaff, tableCtrl.getTables);
+router.get("/restaurants/:id/tables", authStaff, requireRoles(["owner", "manager", "waiter"]), tableCtrl.getTables);
 router.post("/restaurants/:id/tables", authStaff, requireRoles(["owner", "manager"]), validate(s.tableSchema), tableCtrl.createTable);
 router.patch("/tables/:tableId", authStaff, requireRoles(["owner", "manager", "waiter"]), validate(s.tableSchema.partial()), tableCtrl.updateTable);
 router.delete("/tables/:tableId", authStaff, requireRoles(["owner"]), tableCtrl.deleteTable);
 router.post("/tables/:tableId/regenerate-qr", authStaff, requireRoles(["owner", "manager"]), tableCtrl.regenerateTableQR);
 router.post("/tables/:tableId/close-session", authStaff, requireRoles(["owner", "manager", "waiter"]), tableCtrl.closeTableSession);
 router.post("/tables/:tableId/reset", authStaff, requireRoles(["owner", "manager", "waiter"]), tableCtrl.resetTable);
-router.get("/tables/:tableId/session", authStaff, tableCtrl.getTableSession);
+router.get("/tables/:tableId/session", authStaff, requireRoles(["owner", "manager", "waiter"]), tableCtrl.getTableSession);
 
 // Public table resolution for customer landing (PWA scan)
 router.get("/public/r/:slug/t/:qrToken", tableCtrl.resolveTableQR);
@@ -84,7 +89,7 @@ router.patch("/menu-items/:id/toggle-stock", authStaff, requireRoles(["owner", "
 // ==========================================
 // 7. INGREDIENTS / INVENTORY ROUTES
 // ==========================================
-router.get("/restaurants/:id/ingredients", authStaff, requireRoles(["owner", "manager", "chef"]), invCtrl.getIngredients);
+router.get("/restaurants/:id/ingredients", authStaff, requireRoles(["owner", "manager", "chef", "waiter"]), invCtrl.getIngredients);
 router.post("/restaurants/:id/ingredients", authStaff, requireRoles(["owner", "manager"]), validate(s.ingredientSchema), invCtrl.createIngredient);
 router.patch("/ingredients/:id", authStaff, requireRoles(["owner", "manager"]), validate(s.ingredientSchema.partial()), invCtrl.updateIngredient);
 router.delete("/ingredients/:id", authStaff, requireRoles(["owner"]), invCtrl.deleteIngredient);
@@ -99,12 +104,17 @@ router.post("/public/customers", validate(s.customerSessionSchema), customerCtrl
 // 9. ORDERS ROUTES
 // ==========================================
 router.post("/public/orders", authCustomer, validate(s.orderCreateSchema), orderCtrl.createOrder); // placed by customer
-router.get("/restaurants/:id/orders", authStaff, orderCtrl.getOrders);
-router.get("/orders/:id", authStaff, orderCtrl.getOrderById);
+router.post("/orders", authStaff, requireRoles(["owner", "manager", "waiter"]), validate(s.orderCreateSchema), orderCtrl.createOrder); // placed by staff
+router.put("/orders/:id", authStaff, requireRoles(["owner", "manager", "waiter"]), validate(s.orderEditSchema), orderCtrl.editOrder); // edited by staff
+router.patch("/orders/:id", authStaff, requireRoles(["owner", "manager", "waiter"]), validate(s.orderEditSchema), orderCtrl.editOrder); // edited by staff
+router.get("/restaurants/:id/orders", authStaff, requireRoles(["owner", "manager", "waiter", "chef"]), orderCtrl.getOrders);
+router.get("/orders/:id", authStaff, requireRoles(["owner", "manager", "waiter", "chef"]), orderCtrl.getOrderById);
 router.get("/public/orders/:id", authCustomer, orderCtrl.getOrderById); // customer status check
 router.patch("/orders/:id/status", authStaff, requireRoles(["owner", "manager", "waiter"]), validate(s.orderStatusUpdateSchema), orderCtrl.updateOrderStatus);
+router.post("/orders/:id/cancel", authStaff, requireRoles(["owner", "manager", "waiter"]), validate(s.orderCancelSchema), orderCtrl.cancelOrder);
 router.post("/orders/:id/cancel-item", authStaff, requireRoles(["owner", "manager", "waiter", "chef"]), validate(s.orderItemCancelSchema), orderCtrl.cancelOrderItem);
 router.patch("/orders/:id/items/:itemId/cancel", authStaff, requireRoles(["owner", "manager", "waiter", "chef"]), orderCtrl.cancelOrderItem);
+
 router.post("/public/orders/:id/cancel-item", authCustomer, validate(s.orderItemCancelSchema), orderCtrl.cancelOrderItem);
 
 // ==========================================
@@ -149,5 +159,10 @@ router.get("/restaurants/:id/ratings", authStaff, requireRoles(["owner", "manage
 router.get("/restaurants/:id/ratings/overview", authStaff, requireRoles(["owner", "manager"]), ratingCtrl.getRatingsOverview);
 router.get("/menu-items/:id/ratings", authStaff, ratingCtrl.getMenuItemRatings);
 router.patch("/ratings/:id/resolve-followup", authStaff, requireRoles(["owner", "manager"]), ratingCtrl.resolveFollowUp);
+
+// ==========================================
+// 15. AUDIT LOGS ROUTES (ADMIN-ONLY)
+// ==========================================
+router.get("/restaurants/:id/audit-logs", authStaff, requireRoles(["owner", "manager"]), auditCtrl.getAuditLogs);
 
 export default router;

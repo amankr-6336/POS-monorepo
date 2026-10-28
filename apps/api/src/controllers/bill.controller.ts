@@ -59,6 +59,9 @@ export async function generateBill(req: Request, res: Response) {
             quantity: item.quantity,
             specialInstructions: item.specialInstructions,
             prepStation: item.prepStation,
+            selectedVariant: item.selectedVariant,
+            selectedVariants: item.selectedVariants,
+            selectedModifiers: item.selectedModifiers,
           });
         }
       }

@@ -9,9 +9,16 @@
     "seed": "ts-node src/seed.ts",
     "test:sessions": "ts-node src/test-sessions.ts",
     "test:ratings": "ts-node src/test-ratings.ts",
-    "test:multi-orders": "ts-node src/test-multi-orders.ts"
+    "test:multi-orders": "ts-node src/test-multi-orders.ts",
+    "test:variants": "ts-node src/test-variants.ts",
+    "test:cart": "ts-node src/test-customer-cart.ts",
+    "test:pin-and-staff-order": "ts-node src/test-staff-ordering-and-pin.ts",
+    "test:cancellation-and-audit": "ts-node src/test-cancellation-and-audit.ts"
   },
   "dependencies": {
+    "@pos/schemas": "workspace:*",
+    "@pos/types": "workspace:*",
+    "@pos/utils": "workspace:*",
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
@@ -21,10 +28,7 @@
     "mongoose": "^8.3.1",
     "qrcode": "^1.5.3",
     "socket.io": "^4.7.5",
-    "zod": "^3.23.8",
-    "@pos/types": "workspace:*",
-    "@pos/schemas": "workspace:*",
-    "@pos/utils": "workspace:*"
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
@@ -34,6 +38,7 @@
     "@types/jsonwebtoken": "^9.0.6",
     "@types/node": "^20.12.7",
     "@types/qrcode": "^1.5.5",
+    "mongodb-memory-server": "^11.3.0",
     "nodemon": "^3.1.0",
     "ts-node": "^10.9.2"
   },

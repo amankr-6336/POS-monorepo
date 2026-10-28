@@ -1,20 +1,20 @@
 import { create } from "zustand";
+import {
+  SharedCartItem as CartItem,
+  addToCartList,
+  removeFromCartList,
+  updateCartItemQuantity,
+  updateCartItemInstructions,
+} from "@pos/utils";
 
-export interface CartItem {
-  menuItemId: string;
-  name: string;
-  price: number;
-  quantity: number;
-  specialInstructions?: string;
-  imageUrl?: string;
-}
+export type { CartItem };
 
 interface CartState {
   items: CartItem[];
   addToCart: (item: Omit<CartItem, "quantity"> & { quantity?: number }) => void;
-  removeFromCart: (menuItemId: string) => void;
-  updateQuantity: (menuItemId: string, quantity: number) => void;
-  updateInstructions: (menuItemId: string, instructions: string) => void;
+  removeFromCart: (idOrMenuItemId: string) => void;
+  updateQuantity: (idOrMenuItemId: string, quantity: number) => void;
+  updateInstructions: (idOrMenuItemId: string, instructions: string) => void;
   clearCart: () => void;
 }
 
@@ -22,43 +22,22 @@ export const useCartStore = create<CartState>((set, get) => ({
   items: [],
   
   addToCart: (item) => {
-    const existing = get().items.find((i) => i.menuItemId === item.menuItemId);
-    let newItems;
-    if (existing) {
-      newItems = get().items.map((i) =>
-        i.menuItemId === item.menuItemId
-          ? { ...i, quantity: i.quantity + (item.quantity || 1) }
-          : i
-      );
-    } else {
-      newItems = [...get().items, { ...item, quantity: item.quantity || 1 }];
-    }
-    set({ items: newItems });
+    set({ items: addToCartList(get().items, item) });
   },
   
-  removeFromCart: (menuItemId) => {
-    set({ items: get().items.filter((i) => i.menuItemId !== menuItemId) });
+  removeFromCart: (idOrMenuItemId) => {
+    set({ items: removeFromCartList(get().items, idOrMenuItemId) });
   },
   
-  updateQuantity: (menuItemId, quantity) => {
-    if (quantity <= 0) {
-      get().removeFromCart(menuItemId);
-      return;
-    }
-    set({
-      items: get().items.map((i) =>
-        i.menuItemId === menuItemId ? { ...i, quantity } : i
-      ),
-    });
+  updateQuantity: (idOrMenuItemId, quantity) => {
+    set({ items: updateCartItemQuantity(get().items, idOrMenuItemId, quantity) });
   },
   
-  updateInstructions: (menuItemId, specialInstructions) => {
-    set({
-      items: get().items.map((i) =>
-        i.menuItemId === menuItemId ? { ...i, specialInstructions } : i
-      ),
-    });
+  updateInstructions: (idOrMenuItemId, specialInstructions) => {
+    set({ items: updateCartItemInstructions(get().items, idOrMenuItemId, specialInstructions) });
   },
   
   clearCart: () => set({ items: [] }),
 }));
+
+

@@ -243,14 +243,33 @@ export default function Tracker() {
             </div>
 
             <div className="mt-4 flex flex-col gap-3">
-              {bill.items.map((item: any) => (
-                <div key={item.menuItemId} className="flex justify-between text-xs">
-                  <span className="text-zinc-300">
-                    {item.name} <span className="text-zinc-500 font-medium">x{item.quantity}</span>
-                  </span>
-                  <span className="text-white font-semibold font-mono">{formatCurrency(item.price * item.quantity)}</span>
-                </div>
-              ))}
+              {bill.items.map((item: any, idx: number) => {
+                const variants = item.selectedVariants && item.selectedVariants.length > 0
+                  ? item.selectedVariants
+                  : item.selectedVariant
+                  ? [item.selectedVariant]
+                  : [];
+                const modifiers = item.selectedModifiers || [];
+
+                return (
+                  <div key={item._id || `${item.menuItemId}-${idx}`} className="flex justify-between text-xs items-start">
+                    <div>
+                      <span className="text-zinc-300 font-medium">
+                        {item.name} <span className="text-zinc-500 font-medium">x{item.quantity}</span>
+                      </span>
+                      {(variants.length > 0 || modifiers.length > 0) && (
+                        <div className="text-[10px] text-zinc-400">
+                          {[
+                            ...variants.map((v: any) => `${v.groupName ? `${v.groupName}: ` : ""}${v.optionName}`),
+                            ...modifiers.map((m: any) => `+ ${m.optionName}`),
+                          ].join(" • ")}
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-white font-semibold font-mono">{formatCurrency(item.price * item.quantity)}</span>
+                  </div>
+                );
+              })}
             </div>
 
             <div className="mt-4 pt-4 border-t border-zinc-800 border-dashed flex flex-col gap-2">
@@ -293,14 +312,33 @@ export default function Tracker() {
           <Card className="p-5 bg-zinc-900/30 border-zinc-900/60 no-print">
             <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-3">Order Summary</h3>
             <div className="flex flex-col gap-2">
-              {order.items.map((i: any) => (
-                <div key={i.menuItemId} className="flex justify-between text-xs">
-                  <span className="text-zinc-300">
-                    {i.name} <span className="text-zinc-500">x{i.quantity}</span>
-                  </span>
-                  <span className="text-zinc-400 font-mono">{formatCurrency(i.price * i.quantity)}</span>
-                </div>
-              ))}
+              {order.items.map((i: any, idx: number) => {
+                const variants = i.selectedVariants && i.selectedVariants.length > 0
+                  ? i.selectedVariants
+                  : i.selectedVariant
+                  ? [i.selectedVariant]
+                  : [];
+                const modifiers = i.selectedModifiers || [];
+
+                return (
+                  <div key={i._id || `${i.menuItemId}-${idx}`} className="flex justify-between text-xs items-start">
+                    <div>
+                      <span className="text-zinc-300 font-medium">
+                        {i.name} <span className="text-zinc-500">x{i.quantity}</span>
+                      </span>
+                      {(variants.length > 0 || modifiers.length > 0) && (
+                        <div className="text-[10px] text-zinc-400">
+                          {[
+                            ...variants.map((v: any) => `${v.groupName ? `${v.groupName}: ` : ""}${v.optionName}`),
+                            ...modifiers.map((m: any) => `+ ${m.optionName}`),
+                          ].join(" • ")}
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-zinc-400 font-mono">{formatCurrency(i.price * i.quantity)}</span>
+                  </div>
+                );
+              })}
               <div className="border-t border-zinc-900 pt-2 mt-2 flex justify-between text-xs font-bold">
                 <span className="text-zinc-400">Est. Total</span>
                 <span className="text-violet-400 font-mono">{formatCurrency(order.total)}</span>

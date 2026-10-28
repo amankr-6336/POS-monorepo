@@ -38,6 +38,8 @@ export default function MenuManagement() {
   const [itemPrepStation, setItemPrepStation] = useState("main-kitchen");
   const [itemImageUrl, setItemImageUrl] = useState("");
   const [itemRecipe, setItemRecipe] = useState<{ ingredientId: string; quantity: number; unit: string }[]>([]);
+  const [itemVariantGroups, setItemVariantGroups] = useState<any[]>([]);
+  const [itemModifierGroups, setItemModifierGroups] = useState<any[]>([]);
   const [editingItem, setEditingItem] = useState<any>(null);
 
   // Form states - Ingredient
@@ -113,6 +115,149 @@ export default function MenuManagement() {
     );
   };
 
+  // Helper for variant groups
+  const handleAddVariantGroup = () => {
+    setItemVariantGroups([
+      ...itemVariantGroups,
+      {
+        name: "Size",
+        options: [
+          { name: "Small", priceDelta: 0, ingredientOverrides: [] },
+          { name: "Medium", priceDelta: 0, ingredientOverrides: [] },
+          { name: "Large", priceDelta: 0, ingredientOverrides: [] },
+        ],
+      },
+    ]);
+  };
+
+  const handleUpdateVariantGroupName = (groupIndex: number, name: string) => {
+    const updated = [...itemVariantGroups];
+    updated[groupIndex].name = name;
+    setItemVariantGroups(updated);
+  };
+
+  const handleRemoveVariantGroup = (groupIndex: number) => {
+    setItemVariantGroups(itemVariantGroups.filter((_, idx) => idx !== groupIndex));
+  };
+
+  const handleAddVariantOption = (groupIndex: number) => {
+    const updated = [...itemVariantGroups];
+    updated[groupIndex].options.push({ name: "", priceDelta: 0, ingredientOverrides: [] });
+    setItemVariantGroups(updated);
+  };
+
+  const handleUpdateVariantOption = (groupIndex: number, optionIndex: number, field: string, value: any) => {
+    const updated = [...itemVariantGroups];
+    updated[groupIndex].options[optionIndex][field] = value;
+    setItemVariantGroups(updated);
+  };
+
+  const handleRemoveVariantOption = (groupIndex: number, optionIndex: number) => {
+    const updated = [...itemVariantGroups];
+    updated[groupIndex].options = updated[groupIndex].options.filter((_: any, idx: number) => idx !== optionIndex);
+    setItemVariantGroups(updated);
+  };
+
+  const handleAddVariantOverride = (groupIndex: number, optionIndex: number, ingredientId: string) => {
+    const ingDoc = ingredients.find((i) => i._id === ingredientId);
+    if (!ingDoc) return;
+    const updated = [...itemVariantGroups];
+    const overrides = updated[groupIndex].options[optionIndex].ingredientOverrides || [];
+    if (overrides.some((o: any) => o.ingredientId === ingredientId)) return;
+    updated[groupIndex].options[optionIndex].ingredientOverrides = [
+      ...overrides,
+      { ingredientId, quantity: 1, unit: ingDoc.unit },
+    ];
+    setItemVariantGroups(updated);
+  };
+
+  const handleUpdateVariantOverrideQty = (groupIndex: number, optionIndex: number, overrideIndex: number, quantity: number) => {
+    const updated = [...itemVariantGroups];
+    updated[groupIndex].options[optionIndex].ingredientOverrides[overrideIndex].quantity = Math.max(0, quantity);
+    setItemVariantGroups(updated);
+  };
+
+  const handleRemoveVariantOverride = (groupIndex: number, optionIndex: number, overrideIndex: number) => {
+    const updated = [...itemVariantGroups];
+    updated[groupIndex].options[optionIndex].ingredientOverrides = updated[groupIndex].options[optionIndex].ingredientOverrides.filter(
+      (_: any, idx: number) => idx !== overrideIndex
+    );
+    setItemVariantGroups(updated);
+  };
+
+  // Helper for modifier groups
+  const handleAddModifierGroup = () => {
+    setItemModifierGroups([
+      ...itemModifierGroups,
+      {
+        name: "",
+        multiSelect: false,
+        options: [{ name: "", priceDelta: 0, ingredients: [] }],
+      },
+    ]);
+  };
+
+  const handleUpdateModifierGroupName = (groupIndex: number, name: string) => {
+    const updated = [...itemModifierGroups];
+    updated[groupIndex].name = name;
+    setItemModifierGroups(updated);
+  };
+
+  const handleToggleModifierGroupMulti = (groupIndex: number) => {
+    const updated = [...itemModifierGroups];
+    updated[groupIndex].multiSelect = !updated[groupIndex].multiSelect;
+    setItemModifierGroups(updated);
+  };
+
+  const handleRemoveModifierGroup = (groupIndex: number) => {
+    setItemModifierGroups(itemModifierGroups.filter((_, idx) => idx !== groupIndex));
+  };
+
+  const handleAddModifierOption = (groupIndex: number) => {
+    const updated = [...itemModifierGroups];
+    updated[groupIndex].options.push({ name: "", priceDelta: 0, ingredients: [] });
+    setItemModifierGroups(updated);
+  };
+
+  const handleUpdateModifierOption = (groupIndex: number, optionIndex: number, field: string, value: any) => {
+    const updated = [...itemModifierGroups];
+    updated[groupIndex].options[optionIndex][field] = value;
+    setItemModifierGroups(updated);
+  };
+
+  const handleRemoveModifierOption = (groupIndex: number, optionIndex: number) => {
+    const updated = [...itemModifierGroups];
+    updated[groupIndex].options = updated[groupIndex].options.filter((_: any, idx: number) => idx !== optionIndex);
+    setItemModifierGroups(updated);
+  };
+
+  const handleAddModifierIngredient = (groupIndex: number, optionIndex: number, ingredientId: string) => {
+    const ingDoc = ingredients.find((i) => i._id === ingredientId);
+    if (!ingDoc) return;
+    const updated = [...itemModifierGroups];
+    const ings = updated[groupIndex].options[optionIndex].ingredients || [];
+    if (ings.some((o: any) => o.ingredientId === ingredientId)) return;
+    updated[groupIndex].options[optionIndex].ingredients = [
+      ...ings,
+      { ingredientId, quantity: 1, unit: ingDoc.unit },
+    ];
+    setItemModifierGroups(updated);
+  };
+
+  const handleUpdateModifierIngredientQty = (groupIndex: number, optionIndex: number, ingIndex: number, quantity: number) => {
+    const updated = [...itemModifierGroups];
+    updated[groupIndex].options[optionIndex].ingredients[ingIndex].quantity = Math.max(0.1, quantity);
+    setItemModifierGroups(updated);
+  };
+
+  const handleRemoveModifierIngredient = (groupIndex: number, optionIndex: number, ingIndex: number) => {
+    const updated = [...itemModifierGroups];
+    updated[groupIndex].options[optionIndex].ingredients = updated[groupIndex].options[optionIndex].ingredients.filter(
+      (_: any, idx: number) => idx !== ingIndex
+    );
+    setItemModifierGroups(updated);
+  };
+
   const handleOpenCreateItem = () => {
     setEditingItem(null);
     setItemName("");
@@ -122,6 +267,8 @@ export default function MenuManagement() {
     setItemPrepStation("main-kitchen");
     setItemImageUrl("");
     setItemRecipe([]);
+    setItemVariantGroups([]);
+    setItemModifierGroups([]);
     setItemOpen(true);
   };
 
@@ -140,6 +287,39 @@ export default function MenuManagement() {
         unit: r.unit
       })) : []
     );
+    setItemVariantGroups(
+      item.variantGroups
+        ? item.variantGroups.map((vg: any) => ({
+            name: vg.name || "",
+            options: (vg.options || []).map((opt: any) => ({
+              name: opt.name || "",
+              priceDelta: opt.priceDelta || 0,
+              ingredientOverrides: (opt.ingredientOverrides || []).map((io: any) => ({
+                ingredientId: io.ingredientId?._id || io.ingredientId,
+                quantity: io.quantity,
+                unit: io.unit,
+              })),
+            })),
+          }))
+        : []
+    );
+    setItemModifierGroups(
+      item.modifierGroups
+        ? item.modifierGroups.map((mg: any) => ({
+            name: mg.name || "",
+            multiSelect: !!mg.multiSelect,
+            options: (mg.options || []).map((opt: any) => ({
+              name: opt.name || "",
+              priceDelta: opt.priceDelta || 0,
+              ingredients: (opt.ingredients || []).map((mi: any) => ({
+                ingredientId: mi.ingredientId?._id || mi.ingredientId,
+                quantity: mi.quantity,
+                unit: mi.unit,
+              })),
+            })),
+          }))
+        : []
+    );
     setItemOpen(true);
   };
 
@@ -153,11 +333,85 @@ export default function MenuManagement() {
     setItemPrepStation("main-kitchen");
     setItemImageUrl("");
     setItemRecipe([]);
+    setItemVariantGroups([]);
+    setItemModifierGroups([]);
   };
 
   const handleSaveMenuItem = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!itemName || !itemCategoryId || itemPrice <= 0) return;
+    if (!itemName || !itemCategoryId || itemPrice <= 0) {
+      alert("Please provide dish name, category, and a valid base price (> 0).");
+      return;
+    }
+
+    // Validate variant groups explicitly so user input is never silently dropped
+    for (let i = 0; i < itemVariantGroups.length; i++) {
+      const vg = itemVariantGroups[i];
+      if (!vg.name || !vg.name.trim()) {
+        alert(`Please enter a group name (e.g. "Size") for Variant Group #${i + 1}`);
+        return;
+      }
+      const namedOptions = (vg.options || []).filter((opt: any) => opt.name && opt.name.trim());
+      if (namedOptions.length === 0) {
+        alert(`Please add at least one named option (e.g. "Small", "Medium", "Large") for Variant Group "${vg.name}"`);
+        return;
+      }
+    }
+
+    // Validate modifier groups
+    for (let i = 0; i < itemModifierGroups.length; i++) {
+      const mg = itemModifierGroups[i];
+      if (!mg.name || !mg.name.trim()) {
+        alert(`Please enter a group name (e.g. "Add-ons") for Modifier Group #${i + 1}`);
+        return;
+      }
+      const namedOptions = (mg.options || []).filter((opt: any) => opt.name && opt.name.trim());
+      if (namedOptions.length === 0) {
+        alert(`Please add at least one named option (e.g. "Extra Cheese") for Modifier Group "${mg.name}"`);
+        return;
+      }
+    }
+
+    const cleanedVariantGroups = itemVariantGroups
+      .filter((vg) => vg.name && vg.name.trim())
+      .map((vg) => ({
+        name: vg.name.trim(),
+        options: (vg.options || [])
+          .filter((opt: any) => opt.name && opt.name.trim())
+          .map((opt: any) => ({
+            name: opt.name.trim(),
+            priceDelta: Number(opt.priceDelta) || 0,
+            ingredientOverrides: (opt.ingredientOverrides || [])
+              .filter((io: any) => io.ingredientId)
+              .map((io: any) => ({
+                ingredientId: io.ingredientId,
+                quantity: Number(io.quantity) || 0,
+                unit: io.unit,
+              })),
+          })),
+      }))
+      .filter((vg) => vg.options.length > 0);
+
+    const cleanedModifierGroups = itemModifierGroups
+      .filter((mg) => mg.name && mg.name.trim())
+      .map((mg) => ({
+        name: mg.name.trim(),
+        multiSelect: !!mg.multiSelect,
+        options: (mg.options || [])
+          .filter((opt: any) => opt.name && opt.name.trim())
+          .map((opt: any) => ({
+            name: opt.name.trim(),
+            priceDelta: Number(opt.priceDelta) || 0,
+            ingredients: (opt.ingredients || [])
+              .filter((mi: any) => mi.ingredientId)
+              .map((mi: any) => ({
+                ingredientId: mi.ingredientId,
+                quantity: Number(mi.quantity) || 0,
+                unit: mi.unit,
+              })),
+          })),
+      }))
+      .filter((mg) => mg.options.length > 0);
 
     try {
       const url = editingItem
@@ -178,6 +432,8 @@ export default function MenuManagement() {
           categoryId: itemCategoryId,
           imageUrl: itemImageUrl || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&h=300&q=80",
           ingredients: itemRecipe,
+          variantGroups: cleanedVariantGroups,
+          modifierGroups: cleanedModifierGroups,
           prepStation: itemPrepStation,
         }),
       });
@@ -185,9 +441,13 @@ export default function MenuManagement() {
       if (res.ok) {
         handleCloseItemModal();
         fetchData();
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        alert(errData.message || "Failed to save menu item");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      alert(err.message || "Failed to connect to the server.");
     }
   };
 
@@ -298,21 +558,25 @@ export default function MenuManagement() {
           <p className="text-zinc-400 text-sm mt-1">Configure categories, items, and track raw ingredients</p>
         </div>
 
-        {/* Buttons based on active tab */}
-        {activeTab === "items" && (
-          <Button onClick={handleOpenCreateItem} className="flex items-center gap-1.5 rounded-xl font-bold py-2.5">
-            <Plus className="w-4 h-4" /> Add Menu Item
-          </Button>
-        )}
-        {activeTab === "categories" && (
-          <Button onClick={() => setCatOpen(true)} className="flex items-center gap-1.5 rounded-xl font-bold py-2.5">
-            <Plus className="w-4 h-4" /> Add Category
-          </Button>
-        )}
-        {activeTab === "inventory" && (
-          <Button onClick={() => setIngOpen(true)} className="flex items-center gap-1.5 rounded-xl font-bold py-2.5">
-            <Plus className="w-4 h-4" /> Add Ingredient
-          </Button>
+        {/* Buttons based on active tab (admin/manager only) */}
+        {["owner", "manager"].includes(user?.role || "") && (
+          <>
+            {activeTab === "items" && (
+              <Button onClick={handleOpenCreateItem} className="flex items-center gap-1.5 rounded-xl font-bold py-2.5">
+                <Plus className="w-4 h-4" /> Add Menu Item
+              </Button>
+            )}
+            {activeTab === "categories" && (
+              <Button onClick={() => setCatOpen(true)} className="flex items-center gap-1.5 rounded-xl font-bold py-2.5">
+                <Plus className="w-4 h-4" /> Add Category
+              </Button>
+            )}
+            {activeTab === "inventory" && (
+              <Button onClick={() => setIngOpen(true)} className="flex items-center gap-1.5 rounded-xl font-bold py-2.5">
+                <Plus className="w-4 h-4" /> Add Ingredient
+              </Button>
+            )}
+          </>
         )}
       </div>
 
@@ -343,19 +607,41 @@ export default function MenuManagement() {
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-start gap-1">
                     <h3 className="font-extrabold text-white text-sm truncate leading-none">{item.name}</h3>
-                    <button
-                      onClick={() => handleToggleStock(item._id, item.isOutOfStock)}
-                      className="text-zinc-500 hover:text-white shrink-0"
-                    >
-                      {item.isOutOfStock ? (
-                        <ToggleLeft className="w-6 h-6 text-zinc-600" />
-                      ) : (
-                        <ToggleRight className="w-6 h-6 text-violet-500" />
-                      )}
-                    </button>
+                    {["owner", "manager", "chef"].includes(user?.role || "") && (
+                      <button
+                        onClick={() => handleToggleStock(item._id, item.isOutOfStock)}
+                        className="text-zinc-500 hover:text-white shrink-0"
+                      >
+                        {item.isOutOfStock ? (
+                          <ToggleLeft className="w-6 h-6 text-zinc-600" />
+                        ) : (
+                          <ToggleRight className="w-6 h-6 text-violet-500" />
+                        )}
+                      </button>
+                    )}
                   </div>
                   <p className="text-[10px] text-zinc-500 mt-1">{item.categoryId?.name}</p>
                   <p className="text-zinc-400 text-[11px] mt-1.5 line-clamp-2 leading-relaxed">{item.description}</p>
+
+                  {/* Variants and Modifiers Badges */}
+                  {item.variantGroups && item.variantGroups.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-1.5">
+                      {item.variantGroups.map((vg: any, idx: number) => (
+                        <span key={idx} className="text-[9px] bg-violet-500/10 text-violet-300 border border-violet-500/20 px-1.5 py-0.5 rounded font-medium">
+                          {vg.name} ({vg.options?.length || 0})
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {item.modifierGroups && item.modifierGroups.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {item.modifierGroups.map((mg: any, idx: number) => (
+                        <span key={idx} className="text-[9px] bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 px-1.5 py-0.5 rounded font-medium">
+                          {mg.name} ({mg.options?.length || 0})
+                        </span>
+                      ))}
+                    </div>
+                  )}
 
                   <div className="flex justify-between items-center mt-3 pt-2.5 border-t border-zinc-900">
                     <span className="font-extrabold text-violet-400 text-xs">{formatCurrency(item.price)}</span>
@@ -363,19 +649,24 @@ export default function MenuManagement() {
                       <Badge variant={item.isOutOfStock ? "error" : "success"} className="py-0.5 px-2 text-[9px]">
                         {item.isOutOfStock ? "Sold Out" : "Active"}
                       </Badge>
-                      <button
-                        onClick={() => handleOpenEditItem(item)}
-                        className="p-1 hover:bg-zinc-805 rounded-lg text-zinc-500 hover:text-white"
-                        title="Edit Menu Item"
-                      >
-                        <Pencil className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteItem(item._id)}
-                        className="p-1 hover:bg-zinc-800 rounded-lg text-zinc-600 hover:text-red-400"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      {["owner", "manager"].includes(user?.role || "") && (
+                        <>
+                          <button
+                            onClick={() => handleOpenEditItem(item)}
+                            className="p-1 hover:bg-zinc-805 rounded-lg text-zinc-500 hover:text-white"
+                            title="Edit Menu Item"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteItem(item._id)}
+                            className="p-1 hover:bg-zinc-800 rounded-lg text-zinc-600 hover:text-red-400"
+                            title="Delete Menu Item"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -449,17 +740,21 @@ export default function MenuManagement() {
                         )}
                       </td>
                       <td className="p-4 text-right">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedIngredient(ing);
-                            setAdjustOpen(true);
-                          }}
-                          className="text-[10px] rounded-lg px-2.5 py-1 text-zinc-400 hover:text-white border border-zinc-800"
-                        >
-                          Adjust Stock
-                        </Button>
+                        {["owner", "manager", "chef"].includes(user?.role || "") ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedIngredient(ing);
+                              setAdjustOpen(true);
+                            }}
+                            className="text-[10px] rounded-lg px-2.5 py-1 text-zinc-400 hover:text-white border border-zinc-800"
+                          >
+                            Adjust Stock
+                          </Button>
+                        ) : (
+                          <span className="text-zinc-600 text-xs">—</span>
+                        )}
                       </td>
                     </tr>
                   );
@@ -708,6 +1003,317 @@ export default function MenuManagement() {
                 })}
               </div>
             </div>
+          </div>
+
+          {/* Variant Groups (Required Single-Choice) */}
+          <div className="pt-3 border-t border-zinc-850 mt-2">
+            <div className="flex items-center justify-between mb-1">
+              <div>
+                <label className="text-xs font-semibold text-zinc-300 tracking-wider uppercase block">
+                  Variant Groups (Required Single-Choice)
+                </label>
+                <span className="text-[10px] text-zinc-500 block leading-normal">
+                  e.g. "Size" (Small, Medium, Large) or "Portion". Customer must pick exactly one option.
+                </span>
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={handleAddVariantGroup}
+                className="text-xs py-1 px-2.5 rounded-lg border border-zinc-800 hover:bg-zinc-800"
+              >
+                <Plus className="w-3.5 h-3.5 mr-1" /> Add Variant Group
+              </Button>
+            </div>
+
+            {itemVariantGroups.length === 0 ? (
+              <div className="text-[11px] text-zinc-600 italic py-2">No variant groups defined (dish has single fixed price).</div>
+            ) : (
+              <div className="flex flex-col gap-4 mt-2">
+                {itemVariantGroups.map((vg, gIdx) => (
+                  <div key={gIdx} className="p-3.5 bg-zinc-950/70 border border-zinc-800/80 rounded-xl flex flex-col gap-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1">
+                        <label className="text-[11px] font-bold text-violet-400 uppercase tracking-wider block mb-1">
+                          Variant Group Name * (e.g. Size, Portion)
+                        </label>
+                        <Input
+                          placeholder="e.g. Size"
+                          value={vg.name}
+                          onChange={(e) => handleUpdateVariantGroupName(gIdx, e.target.value)}
+                          className="font-bold text-xs"
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveVariantGroup(gIdx)}
+                        className="text-zinc-500 hover:text-red-400 p-1.5 mt-5"
+                        title="Remove Variant Group"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+
+                    <div className="flex flex-col gap-2 pl-2 border-l-2 border-violet-500/40">
+                      <span className="text-[10px] uppercase font-bold text-zinc-400">Options</span>
+                      {vg.options.map((opt: any, oIdx: number) => (
+                        <div key={oIdx} className="p-2.5 bg-zinc-900/60 rounded-lg border border-zinc-850 flex flex-col gap-2">
+                          <div className="flex items-center gap-2">
+                            <Input
+                              placeholder="Option name, e.g. Large"
+                              value={opt.name}
+                              onChange={(e) => handleUpdateVariantOption(gIdx, oIdx, "name", e.target.value)}
+                              className="flex-1 text-xs"
+                            />
+                            <div className="flex items-center gap-1">
+                              <span className="text-[11px] text-zinc-400">+$</span>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                placeholder="Price Delta"
+                                value={opt.priceDelta}
+                                onChange={(e) => handleUpdateVariantOption(gIdx, oIdx, "priceDelta", parseFloat(e.target.value) || 0)}
+                                className="w-20 text-xs text-center font-mono"
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveVariantOption(gIdx, oIdx)}
+                              className="text-zinc-600 hover:text-red-400 p-1"
+                            >
+                              ✕
+                            </button>
+                          </div>
+
+                          {/* Ingredient quantity overrides */}
+                          <div className="pl-2 border-l border-zinc-800 flex flex-col gap-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[9px] uppercase font-bold text-zinc-500">Ingredient Overrides (Optional)</span>
+                              <select
+                                onChange={(e) => {
+                                  if (e.target.value) {
+                                    handleAddVariantOverride(gIdx, oIdx, e.target.value);
+                                    e.target.value = "";
+                                  }
+                                }}
+                                className="text-[10px] bg-zinc-950 border border-zinc-800 text-zinc-400 rounded px-1.5 py-0.5"
+                              >
+                                <option value="">+ Add Override...</option>
+                                {ingredients.map((ing) => (
+                                  <option key={ing._id} value={ing._id}>
+                                    {ing.name} ({ing.unit})
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+
+                            {(opt.ingredientOverrides || []).map((io: any, ioIdx: number) => {
+                              const ingDoc = ingredients.find((i) => i._id === io.ingredientId);
+                              return (
+                                <div key={ioIdx} className="flex items-center justify-between text-xs bg-zinc-950/50 p-1.5 rounded">
+                                  <span className="text-zinc-300 text-[11px]">{ingDoc?.name}</span>
+                                  <div className="flex items-center gap-1.5">
+                                    <Input
+                                      type="number"
+                                      step="0.1"
+                                      value={io.quantity}
+                                      onChange={(e) => handleUpdateVariantOverrideQty(gIdx, oIdx, ioIdx, parseFloat(e.target.value) || 0)}
+                                      className="w-14 px-1.5 py-0.5 text-xs text-center font-mono"
+                                    />
+                                    <span className="text-[10px] text-zinc-500">{io.unit || ingDoc?.unit}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveVariantOverride(gIdx, oIdx, ioIdx)}
+                                      className="text-zinc-600 hover:text-red-400 text-xs ml-1"
+                                    >
+                                      ✕
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleAddVariantOption(gIdx)}
+                        className="text-[11px] py-1 text-violet-400 hover:text-violet-300 self-start"
+                      >
+                        <Plus className="w-3 h-3 mr-1" /> Add Option
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Modifier Groups (Optional Add-ons) */}
+          <div className="pt-3 border-t border-zinc-850 mt-2">
+            <div className="flex items-center justify-between mb-1">
+              <div>
+                <label className="text-xs font-semibold text-zinc-300 tracking-wider uppercase block">
+                  Modifier Groups (Optional Add-ons)
+                </label>
+                <span className="text-[10px] text-zinc-500 block leading-normal">
+                  e.g. "Add-ons" (Extra Cheese, Bacon, Jalapenos). Single or multi-select.
+                </span>
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={handleAddModifierGroup}
+                className="text-xs py-1 px-2.5 rounded-lg border border-zinc-800 hover:bg-zinc-800"
+              >
+                <Plus className="w-3.5 h-3.5 mr-1" /> Add Modifier Group
+              </Button>
+            </div>
+
+            {itemModifierGroups.length === 0 ? (
+              <div className="text-[11px] text-zinc-600 italic py-2">No modifier groups defined.</div>
+            ) : (
+              <div className="flex flex-col gap-4 mt-2">
+                {itemModifierGroups.map((mg, gIdx) => (
+                  <div key={gIdx} className="p-3.5 bg-zinc-950/70 border border-zinc-800/80 rounded-xl flex flex-col gap-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1">
+                        <label className="text-[11px] font-bold text-indigo-400 uppercase tracking-wider block mb-1">
+                          Modifier Group Name * (e.g. Add-ons, Extra Toppings)
+                        </label>
+                        <Input
+                          placeholder="e.g. Add-ons"
+                          value={mg.name}
+                          onChange={(e) => handleUpdateModifierGroupName(gIdx, e.target.value)}
+                          className="font-bold text-xs"
+                        />
+                      </div>
+                      <div className="flex items-center gap-3 mt-5">
+                        <label className="flex items-center gap-1.5 text-xs text-zinc-400 cursor-pointer shrink-0">
+                          <input
+                            type="checkbox"
+                            checked={mg.multiSelect}
+                            onChange={() => handleToggleModifierGroupMulti(gIdx)}
+                            className="rounded text-violet-600 focus:ring-violet-500"
+                          />
+                          Multi-Select
+                        </label>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveModifierGroup(gIdx)}
+                          className="text-zinc-500 hover:text-red-400 p-1.5"
+                          title="Remove Modifier Group"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-2 pl-2 border-l-2 border-indigo-500/40">
+                      <span className="text-[10px] uppercase font-bold text-zinc-400">Options</span>
+                      {mg.options.map((opt: any, oIdx: number) => (
+                        <div key={oIdx} className="p-2.5 bg-zinc-900/60 rounded-lg border border-zinc-850 flex flex-col gap-2">
+                          <div className="flex items-center gap-2">
+                            <Input
+                              placeholder="Option name, e.g. Extra Cheese"
+                              value={opt.name}
+                              onChange={(e) => handleUpdateModifierOption(gIdx, oIdx, "name", e.target.value)}
+                              className="flex-1 text-xs"
+                            />
+                            <div className="flex items-center gap-1">
+                              <span className="text-[11px] text-zinc-400">+$</span>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                placeholder="Price Delta"
+                                value={opt.priceDelta}
+                                onChange={(e) => handleUpdateModifierOption(gIdx, oIdx, "priceDelta", parseFloat(e.target.value) || 0)}
+                                className="w-20 text-xs text-center font-mono"
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveModifierOption(gIdx, oIdx)}
+                              className="text-zinc-600 hover:text-red-400 p-1"
+                            >
+                              ✕
+                            </button>
+                          </div>
+
+                          {/* Additional ingredients consumed */}
+                          <div className="pl-2 border-l border-zinc-800 flex flex-col gap-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[9px] uppercase font-bold text-zinc-500">Additional Ingredients (Optional)</span>
+                              <select
+                                onChange={(e) => {
+                                  if (e.target.value) {
+                                    handleAddModifierIngredient(gIdx, oIdx, e.target.value);
+                                    e.target.value = "";
+                                  }
+                                }}
+                                className="text-[10px] bg-zinc-950 border border-zinc-800 text-zinc-400 rounded px-1.5 py-0.5"
+                              >
+                                <option value="">+ Add Ingredient...</option>
+                                {ingredients.map((ing) => (
+                                  <option key={ing._id} value={ing._id}>
+                                    {ing.name} ({ing.unit})
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+
+                            {(opt.ingredients || []).map((mi: any, miIdx: number) => {
+                              const ingDoc = ingredients.find((i) => i._id === mi.ingredientId);
+                              return (
+                                <div key={miIdx} className="flex items-center justify-between text-xs bg-zinc-950/50 p-1.5 rounded">
+                                  <span className="text-zinc-300 text-[11px]">{ingDoc?.name}</span>
+                                  <div className="flex items-center gap-1.5">
+                                    <Input
+                                      type="number"
+                                      step="0.1"
+                                      value={mi.quantity}
+                                      onChange={(e) => handleUpdateModifierIngredientQty(gIdx, oIdx, miIdx, parseFloat(e.target.value) || 0)}
+                                      className="w-14 px-1.5 py-0.5 text-xs text-center font-mono"
+                                    />
+                                    <span className="text-[10px] text-zinc-500">{mi.unit || ingDoc?.unit}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveModifierIngredient(gIdx, oIdx, miIdx)}
+                                      className="text-zinc-600 hover:text-red-400 text-xs ml-1"
+                                    >
+                                      ✕
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleAddModifierOption(gIdx)}
+                        className="text-[11px] py-1 text-indigo-400 hover:text-indigo-300 self-start"
+                      >
+                        <Plus className="w-3 h-3 mr-1" /> Add Option
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <Button type="submit" className="w-full mt-4">Save Menu Item</Button>

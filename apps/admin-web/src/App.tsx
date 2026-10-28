@@ -9,7 +9,9 @@ import MenuManagement from "./pages/MenuManagement";
 import KDS from "./pages/KDS";
 import Orders from "./pages/Orders";
 import Ratings from "./pages/Ratings";
-import { LayoutDashboard, TableProperties, ChefHat, ClipboardList, BookOpen, LogOut, Star } from "lucide-react";
+import AuditLogs from "./pages/AuditLogs";
+import { LayoutDashboard, TableProperties, ChefHat, ClipboardList, BookOpen, LogOut, Star, KeyRound, ShieldCheck } from "lucide-react";
+import PinSwitchModal from "./components/PinSwitchModal";
 import { SOCKET_URL } from "./config";
 
 // Route guard for authenticated staff
@@ -18,9 +20,39 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
   return token ? <>{children}</> : <Navigate to="/login" replace />;
 }
 
+export function getDefaultRouteForRole(role?: string): string {
+  switch (role) {
+    case "chef":
+      return "/kds";
+    case "waiter":
+      return "/tables";
+    case "owner":
+    case "manager":
+    default:
+      return "/dashboard";
+  }
+}
+
+// Role-based route guard
+function RoleRoute({
+  allowedRoles,
+  children,
+}: {
+  allowedRoles: ("owner" | "manager" | "waiter" | "chef")[];
+  children: React.ReactNode;
+}) {
+  const user = useAuthStore((state) => state.user);
+  if (!user) return <Navigate to="/login" replace />;
+  if (!allowedRoles.includes(user.role)) {
+    return <Navigate to={getDefaultRouteForRole(user.role)} replace />;
+  }
+  return <>{children}</>;
+}
+
 // Sidebar layout wrapper
 function Layout() {
   const { user, clearAuth } = useAuthStore();
+  const [pinSwitchOpen, setPinSwitchOpen] = React.useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -30,6 +62,8 @@ function Layout() {
     socket.emit("join-restaurant", user.restaurantId);
 
     socket.on("rating:lowRatingAlert", (data: any) => {
+      // Only notify owners and managers of low ratings
+      if (!["owner", "manager"].includes(user?.role || "")) return;
       try {
         const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-84.wav");
         audio.play();
@@ -40,21 +74,33 @@ function Layout() {
     return () => {
       socket.disconnect();
     };
-  }, [user?.restaurantId]);
+  }, [user?.restaurantId, user?.role]);
 
   const handleLogout = () => {
     clearAuth();
     navigate("/login");
   };
 
-  const navLinks = [
-    { to: "/dashboard", label: "Dashboard", icon: <LayoutDashboard className="w-4 h-4" /> },
-    { to: "/tables", label: "Tables", icon: <TableProperties className="w-4 h-4" /> },
-    { to: "/menu-management", label: "Menu & Stock", icon: <BookOpen className="w-4 h-4" /> },
-    { to: "/orders", label: "Orders & Bills", icon: <ClipboardList className="w-4 h-4" /> },
-    { to: "/ratings", label: "Ratings & Reviews", icon: <Star className="w-4 h-4" /> },
-    { to: "/kds", label: "KDS Screen", icon: <ChefHat className="w-4 h-4" /> },
+  const userRole = user?.role || "waiter";
+
+  const allNavLinks = [
+    { to: "/dashboard", label: "Dashboard", icon: <LayoutDashboard className="w-4 h-4" />, roles: ["owner", "manager"] },
+    { to: "/tables", label: "Tables", icon: <TableProperties className="w-4 h-4" />, roles: ["owner", "manager", "waiter"] },
+    { to: "/menu-management", label: "Menu & Stock", icon: <BookOpen className="w-4 h-4" />, roles: ["owner", "manager", "waiter", "chef"] },
+    { to: "/orders", label: "Orders & Bills", icon: <ClipboardList className="w-4 h-4" />, roles: ["owner", "manager", "waiter", "chef"] },
+    { to: "/ratings", label: "Ratings & Reviews", icon: <Star className="w-4 h-4" />, roles: ["owner", "manager"] },
+    { to: "/audit-logs", label: "Audit Logs", icon: <ShieldCheck className="w-4 h-4" />, roles: ["owner", "manager"] },
+    { to: "/kds", label: "KDS Screen", icon: <ChefHat className="w-4 h-4" />, roles: ["owner", "manager", "waiter", "chef"] },
   ];
+
+  const navLinks = allNavLinks.filter((link) => link.roles.includes(userRole));
+
+  const consoleSubtitle =
+    user?.role === "chef"
+      ? "Kitchen Station"
+      : user?.role === "waiter"
+      ? "Service Terminal"
+      : "Admin Console";
 
   return (
     <div className="min-h-screen flex bg-zinc-950 text-zinc-100">
@@ -63,7 +109,7 @@ function Layout() {
         <div className="flex flex-col gap-8">
           <div>
             <h2 className="text-xl font-black text-white tracking-tight">Gourmet POS</h2>
-            <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Admin Console</span>
+            <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">{consoleSubtitle}</span>
           </div>
 
           <nav className="flex flex-col gap-1">
@@ -87,31 +133,103 @@ function Layout() {
           </nav>
         </div>
 
-        {/* User logout footer */}
-        <div className="pt-6 border-t border-zinc-800 flex items-center justify-between">
-          <div>
-            <h4 className="text-xs font-bold text-white truncate max-w-[120px]">{user?.name}</h4>
-            <span className="text-[10px] text-zinc-500 capitalize">{user?.role}</span>
+        {/* User profile & fast PIN switch footer */}
+        <div className="pt-6 border-t border-zinc-800 flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="text-xs font-bold text-white truncate max-w-[120px]">{user?.name}</h4>
+              <span className="text-[10px] text-zinc-500 capitalize">{user?.role}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setPinSwitchOpen(true)}
+                className="p-2 hover:bg-violet-950/60 rounded-xl text-zinc-400 hover:text-violet-400 border border-zinc-800 hover:border-violet-500/30 transition-all"
+                title="Switch Active Staff via PIN"
+              >
+                <KeyRound className="w-4 h-4" />
+              </button>
+              <button
+                onClick={handleLogout}
+                className="p-2 hover:bg-zinc-800 rounded-xl text-zinc-500 hover:text-red-400 transition-colors"
+                title="Log out device"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
           </div>
+          
           <button
-            onClick={handleLogout}
-            className="p-2 hover:bg-zinc-800 rounded-xl text-zinc-500 hover:text-red-400 transition-colors"
+            onClick={() => setPinSwitchOpen(true)}
+            className="w-full py-2 px-3 rounded-xl bg-zinc-850 hover:bg-zinc-800 text-zinc-300 hover:text-white text-[11px] font-bold border border-zinc-800 flex items-center justify-center gap-2 transition-all shadow-sm"
           >
-            <LogOut className="w-4 h-4" />
+            <KeyRound className="w-3.5 h-3.5 text-violet-400" />
+            <span>Fast Staff Switch (PIN)</span>
           </button>
         </div>
       </aside>
 
+      <PinSwitchModal isOpen={pinSwitchOpen} onClose={() => setPinSwitchOpen(false)} />
+
       {/* Main viewport */}
       <main className="flex-1 p-8 overflow-y-auto max-h-screen">
         <Routes>
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/tables" element={<Tables />} />
-          <Route path="/menu-management" element={<MenuManagement />} />
-          <Route path="/orders" element={<Orders />} />
-          <Route path="/ratings" element={<Ratings />} />
-          <Route path="/kds" element={<KDS />} />
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          <Route
+            path="/dashboard"
+            element={
+              <RoleRoute allowedRoles={["owner", "manager"]}>
+                <Dashboard />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/tables"
+            element={
+              <RoleRoute allowedRoles={["owner", "manager", "waiter"]}>
+                <Tables />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/menu-management"
+            element={
+              <RoleRoute allowedRoles={["owner", "manager", "waiter", "chef"]}>
+                <MenuManagement />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/orders"
+            element={
+              <RoleRoute allowedRoles={["owner", "manager", "waiter", "chef"]}>
+                <Orders />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/ratings"
+            element={
+              <RoleRoute allowedRoles={["owner", "manager"]}>
+                <Ratings />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/audit-logs"
+            element={
+              <RoleRoute allowedRoles={["owner", "manager"]}>
+                <AuditLogs />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/kds"
+            element={
+              <RoleRoute allowedRoles={["owner", "manager", "waiter", "chef"]}>
+                <KDS />
+              </RoleRoute>
+            }
+          />
+          <Route path="*" element={<Navigate to={getDefaultRouteForRole(user?.role)} replace />} />
         </Routes>
       </main>
     </div>

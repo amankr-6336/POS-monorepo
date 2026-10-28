@@ -7,6 +7,9 @@ const StaffUserSchema = new Schema<StaffUser>(
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true, index: true },
     passwordHash: { type: String, required: true },
+    pinHash: { type: String },
+    pinAttempts: { type: Number, default: 0 },
+    pinLockedUntil: { type: Date, default: null },
     role: {
       type: String,
       enum: ["owner", "manager", "waiter", "chef"],

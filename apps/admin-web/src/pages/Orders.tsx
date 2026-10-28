@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import { useAuthStore } from "../store/useAuthStore";
 import { Button, Badge, Modal } from "@pos/ui";
 import { formatCurrency, formatDate } from "@pos/utils";
-import { Receipt, Check, ArrowRight, Printer, ShieldCheck, Trash } from "lucide-react";
+import { Receipt, Check, ArrowRight, Printer, ShieldCheck, Trash, Edit3, XCircle } from "lucide-react";
+import TableOrderBuilderModal from "../components/TableOrderBuilderModal";
+import CancellationModal from "../components/CancellationModal";
 
 import { API_BASE_URL } from "../config";
 
@@ -11,11 +13,21 @@ export default function Orders() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Cancellation modal state
+  const [cancellationTarget, setCancellationTarget] = useState<{
+    type: "order" | "item";
+    orderId: string;
+    itemId?: string;
+    description: string;
+  } | null>(null);
+
   // Bill Modal details
   const [activeOrder, setActiveOrder] = useState<any>(null);
   const [billDetails, setBillDetails] = useState<any>(null);
   const [billModalOpen, setBillModalOpen] = useState(false);
   const [printKotOrder, setPrintKotOrder] = useState<any>(null);
+  const [editingTable, setEditingTable] = useState<any | null>(null);
+
 
   useEffect(() => {
     if (printKotOrder) {
@@ -76,22 +88,48 @@ export default function Orders() {
     }
   };
 
-  const handleCancelOrder = async (orderId: string) => {
-    if (!confirm("Are you sure you want to cancel this order? It will restore any deducted stock.")) return;
+  const handleConfirmCancellation = async (reason: string, note?: string) => {
+    if (!cancellationTarget) return;
+
     try {
-      const res = await fetch(`${API_BASE_URL}/orders/${orderId}/status`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({ status: "cancelled" }),
-      });
-      if (res.ok) {
-        fetchOrders();
+      if (cancellationTarget.type === "order") {
+        const res = await fetch(`${API_BASE_URL}/orders/${cancellationTarget.orderId}/cancel`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({ reason, note }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.message || "Failed to cancel order");
+        }
+      } else if (cancellationTarget.type === "item") {
+        const res = await fetch(`${API_BASE_URL}/orders/${cancellationTarget.orderId}/cancel-item`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({
+            itemId: cancellationTarget.itemId,
+            reason,
+            note,
+          }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.message || "Failed to cancel item");
+        }
       }
-    } catch (err) {
+
+      await fetchOrders();
+    } catch (err: any) {
       console.error(err);
+      throw err;
     }
   };
 
@@ -181,18 +219,85 @@ export default function Orders() {
                 <td className="p-4 font-bold text-white text-xs">{(o.tableId as any)?.label || "Table"}</td>
                 <td className="p-4 text-xs">
                   <div>
-                    <h4 className="font-bold text-zinc-200">{(o.customerId as any)?.name}</h4>
-                    <span className="text-[10px] text-zinc-500 font-mono">{(o.customerId as any)?.mobileNumber}</span>
+                    <h4 className="font-bold text-zinc-200">{(o.customerId as any)?.name || "Walk-in Guest"}</h4>
+                    <span className="text-[10px] text-zinc-500 font-mono">{(o.customerId as any)?.mobileNumber || ""}</span>
+                    {o.placedByStaffId && (
+                      <div className="mt-0.5">
+                        <span className="text-[10px] text-violet-400 font-medium">
+                          By: {(o.placedByStaffId as any).name} ({(o.placedByStaffId as any).role})
+                        </span>
+                      </div>
+                    )}
+                    {o.lastEditedByStaffId && (
+                      <div className="text-[9px] text-zinc-500">
+                        Edited by: {(o.lastEditedByStaffId as any).name}
+                      </div>
+                    )}
                   </div>
                 </td>
-                <td className="p-4 text-xs font-light max-w-xs truncate">
-                  {o.items.map((i: any) => `${i.name} (x${i.quantity})`).join(", ")}
+
+                <td className="p-4 text-xs font-light max-w-sm">
+                  <div className="flex flex-col gap-1.5">
+                    {o.items.map((i: any, idx: number) => {
+                      const details = [
+                        i.selectedVariant?.optionName || (i.selectedVariants?.[0]?.optionName),
+                        ...(i.selectedModifiers?.map((m: any) => `+${m.optionName}`) || []),
+                      ].filter(Boolean).join(", ");
+                      const isCancelled = i.itemStatus === "cancelled";
+
+                      return (
+                        <div
+                          key={idx}
+                          className={`flex items-center justify-between gap-2 p-1.5 px-2.5 rounded-lg border text-[11px] ${
+                            isCancelled
+                              ? "bg-red-950/20 border-red-900/40 text-zinc-500 line-through"
+                              : "bg-zinc-950/60 border-zinc-850 text-zinc-200"
+                          }`}
+                        >
+                          <span className="truncate">
+                            <strong className={isCancelled ? "text-zinc-500" : "text-white"}>{i.name}</strong> x{i.quantity}
+                            {details && <span className="text-violet-400 ml-1 font-mono">({details})</span>}
+                            {isCancelled && <span className="text-red-400 ml-1 font-bold text-[9px] uppercase tracking-wider">(Cancelled)</span>}
+                          </span>
+                          {!isCancelled && o.status !== "cancelled" && o.status !== "billed" && (
+                            <button
+                              onClick={() =>
+                                setCancellationTarget({
+                                  type: "item",
+                                  orderId: o._id,
+                                  itemId: i._id || i.menuItemId,
+                                  description: `${i.name} x${i.quantity} (${(o.tableId as any)?.label || "Table"})`,
+                                })
+                              }
+                              className="text-[10px] text-zinc-500 hover:text-red-400 p-0.5 hover:bg-zinc-800 rounded transition-colors shrink-0"
+                              title="Cancel this item (mandatory reason & stock reversal)"
+                            >
+                              <XCircle className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </td>
                 <td className="p-4 text-xs font-bold text-violet-400 font-mono">{formatCurrency(o.total)}</td>
                 <td className="p-4">{getStatusBadge(o.status)}</td>
                 
                 <td className="p-4 text-right flex justify-end gap-2 items-center">
-                  {/* Status advancer */}
+                  {/* Edit order items button */}
+                  {["placed", "confirmed"].includes(o.status) && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEditingTable(o.tableId)}
+                      className="text-[10px] rounded-lg px-2.5 py-1 text-zinc-300 border border-zinc-800 hover:bg-zinc-850 flex items-center gap-1.5 font-semibold"
+                      title="Edit order items / round"
+                    >
+                      <Edit3 className="w-3.5 h-3.5 text-violet-400" />
+                      Edit
+                    </Button>
+                  )}
+
                   {/* Print KOT Button */}
                   {["placed", "confirmed", "preparing", "ready"].includes(o.status) && (
                     <Button
@@ -206,6 +311,7 @@ export default function Orders() {
                       Print KOT
                     </Button>
                   )}
+
 
                   {/* Status advancer */}
                   {["placed", "confirmed", "preparing", "ready"].includes(o.status) && (
@@ -238,8 +344,15 @@ export default function Orders() {
                   {/* Cancel button */}
                   {["placed", "confirmed", "preparing"].includes(o.status) && (
                     <button
-                      onClick={() => handleCancelOrder(o._id)}
+                      onClick={() =>
+                        setCancellationTarget({
+                          type: "order",
+                          orderId: o._id,
+                          description: `Order #${o._id.slice(-4).toUpperCase()} for ${(o.tableId as any)?.label || "Table"}`,
+                        })
+                      }
                       className="p-1.5 rounded-lg border border-zinc-900 hover:border-zinc-800 hover:bg-zinc-900 text-zinc-500 hover:text-red-400 transition-colors"
+                      title="Cancel entire order (mandatory reason & stock reversal)"
                     >
                       <Trash className="w-4 h-4" />
                     </button>
@@ -277,12 +390,36 @@ export default function Orders() {
               <span>Item Description</span>
               <span>Qty</span>
             </div>
-            {printKotOrder.items.map((i: any, index: number) => (
-              <div key={index} className="flex justify-between items-start text-xs font-bold leading-tight">
-                <span>{i.name}</span>
-                <span className="font-mono">x{i.quantity}</span>
-              </div>
-            ))}
+            {printKotOrder.items.map((i: any, index: number) => {
+              const variants = i.selectedVariants && i.selectedVariants.length > 0
+                ? i.selectedVariants
+                : i.selectedVariant
+                ? [i.selectedVariant]
+                : [];
+              const modifiers = i.selectedModifiers || [];
+
+              return (
+                <div key={index} className="flex justify-between items-start text-xs font-bold leading-tight border-b border-zinc-200 pb-1">
+                  <div>
+                    <div>{i.name}</div>
+                    {variants.length > 0 && (
+                      <div className="text-[10px] text-zinc-700 font-semibold">
+                        {variants.map((v: any) => `${v.groupName ? `${v.groupName}: ` : ""}${v.optionName}`).join(", ")}
+                      </div>
+                    )}
+                    {modifiers.length > 0 && (
+                      <div className="text-[10px] text-zinc-700 font-normal">
+                        {modifiers.map((m: any) => `+ ${m.optionName}`).join(", ")}
+                      </div>
+                    )}
+                    {i.specialInstructions && (
+                      <div className="text-[9px] text-amber-800 italic">📝 {i.specialInstructions}</div>
+                    )}
+                  </div>
+                  <span className="font-mono">x{i.quantity}</span>
+                </div>
+              );
+            })}
           </div>
 
           <div className="text-center text-[10px] tracking-widest uppercase font-semibold font-sans">
@@ -307,14 +444,33 @@ export default function Orders() {
 
               {/* Items */}
               <div className="flex flex-col gap-2.5">
-                {billDetails.items.map((i: any) => (
-                  <div key={i.menuItemId} className="flex justify-between text-xs">
-                    <span className="text-zinc-300">
-                      {i.name} <span className="text-zinc-500 font-medium">x{i.quantity}</span>
-                    </span>
-                    <span className="text-white font-mono font-semibold">{formatCurrency(i.price * i.quantity)}</span>
-                  </div>
-                ))}
+                {billDetails.items.map((i: any, idx: number) => {
+                  const variants = i.selectedVariants && i.selectedVariants.length > 0
+                    ? i.selectedVariants
+                    : i.selectedVariant
+                    ? [i.selectedVariant]
+                    : [];
+                  const modifiers = i.selectedModifiers || [];
+
+                  return (
+                    <div key={i._id || `${i.menuItemId}-${idx}`} className="flex justify-between text-xs items-start">
+                      <div>
+                        <span className="text-zinc-300 font-medium">
+                          {i.name} <span className="text-zinc-500 font-medium">x{i.quantity}</span>
+                        </span>
+                        {(variants.length > 0 || modifiers.length > 0) && (
+                          <div className="text-[10px] text-zinc-400">
+                            {[
+                              ...variants.map((v: any) => `${v.groupName ? `${v.groupName}: ` : ""}${v.optionName}`),
+                              ...modifiers.map((m: any) => `+ ${m.optionName}`),
+                            ].join(" • ")}
+                          </div>
+                        )}
+                      </div>
+                      <span className="text-white font-mono font-semibold">{formatCurrency(i.price * i.quantity)}</span>
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Math */}
@@ -365,10 +521,27 @@ export default function Orders() {
                 </span>
               )}
             </div>
-
           </div>
         </Modal>
       )}
+
+      {/* Order Editing Modal */}
+      <TableOrderBuilderModal
+        table={editingTable}
+        isOpen={!!editingTable}
+        onClose={() => setEditingTable(null)}
+        onOrderCompleted={fetchOrders}
+      />
+
+      {/* Mandatory Reason Cancellation Modal */}
+      <CancellationModal
+        isOpen={!!cancellationTarget}
+        onClose={() => setCancellationTarget(null)}
+        onConfirm={handleConfirmCancellation}
+        title={cancellationTarget?.type === "order" ? "Cancel Entire Order" : "Cancel Order Item"}
+        itemDescription={cancellationTarget?.description}
+        isWholeOrder={cancellationTarget?.type === "order"}
+      />
     </>
   );
 }

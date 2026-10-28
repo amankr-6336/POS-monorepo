@@ -47,6 +47,8 @@ export default function KDS() {
   const [tickets, setTickets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [cancelAlert, setCancelAlert] = useState<string | null>(null);
+
   const fetchTickets = async () => {
     try {
       const res = await fetch(`${API_BASE_URL}/kots?station=${selectedStation}&restaurantId=${user?.restaurantId}`, {
@@ -92,6 +94,28 @@ export default function KDS() {
         if (prev.some((t) => t._id === newKot._id)) return prev;
         return [...prev, newKot];
       });
+    });
+
+    socket.on("kot:itemCancelled", (data: any) => {
+      try {
+        const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-84.wav");
+        audio.play();
+      } catch (e) {}
+      setCancelAlert(
+        `⚠️ ITEM CANCELLED: "${data.item?.name}" (x${data.item?.quantity || 1}) for ${data.tableLabel || "Table"}. Reason: ${data.reason}`
+      );
+      fetchTickets();
+    });
+
+    socket.on("kot:orderCancelled", (data: any) => {
+      try {
+        const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-84.wav");
+        audio.play();
+      } catch (e) {}
+      setCancelAlert(
+        `🛑 ORDER CANCELLED: Whole ticket for ${data.tableLabel || "Table"} was cancelled. Reason: ${data.reason}`
+      );
+      fetchTickets();
     });
 
     socket.on("kot:statusChanged", (updatedKot: any) => {
@@ -170,6 +194,21 @@ export default function KDS() {
         </div>
       </div>
 
+      {/* Real-time Cancellation Alert Banner */}
+      {cancelAlert && (
+        <div className="p-3 bg-red-950/80 border border-red-700/80 rounded-2xl flex items-center justify-between gap-3 text-red-200 text-xs shadow-lg animate-pulse">
+          <div className="flex items-center gap-2">
+            <span className="font-bold">{cancelAlert}</span>
+          </div>
+          <button
+            onClick={() => setCancelAlert(null)}
+            className="text-red-300 hover:text-white text-xs font-bold px-2.5 py-1 rounded-lg bg-red-900/60 hover:bg-red-800 transition-colors"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
       {/* Tickets List */}
       {tickets.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center py-20 text-zinc-500 font-light text-sm bg-zinc-900/10 border border-zinc-900/50 rounded-3xl">
@@ -204,19 +243,52 @@ export default function KDS() {
 
                   {/* Items List */}
                   <div className="mt-3 flex flex-col gap-2">
-                    {t.items.map((item: any, idx: number) => (
-                      <div key={idx} className="flex flex-col gap-0.5 border-b border-zinc-900 pb-1.5">
-                        <div className="flex justify-between text-xs font-semibold">
-                          <span className="text-zinc-200">{item.menuItemName}</span>
-                          <span className="text-white bg-zinc-950 font-bold px-2 py-0.5 rounded-lg border border-zinc-800">x{item.quantity}</span>
+                    {t.items.map((item: any, idx: number) => {
+                      const variants = item.selectedVariants && item.selectedVariants.length > 0
+                        ? item.selectedVariants
+                        : item.selectedVariant
+                        ? [item.selectedVariant]
+                        : [];
+                      const modifiers = item.selectedModifiers || [];
+
+                      return (
+                        <div key={idx} className="flex flex-col gap-1 border-b border-zinc-900 pb-2">
+                          <div className="flex justify-between text-xs font-semibold items-start">
+                            <div>
+                              <span className="text-zinc-100 font-bold">{item.menuItemName}</span>
+                              
+                              {/* Selected Variant */}
+                              {variants.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-0.5">
+                                  {variants.map((v: any, vIdx: number) => (
+                                    <span key={vIdx} className="text-[10px] font-semibold text-violet-300 bg-violet-950/60 border border-violet-800/60 px-1.5 py-0.5 rounded">
+                                      {v.groupName ? `${v.groupName}: ` : ""}{v.optionName}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+
+                              {/* Selected Modifiers */}
+                              {modifiers.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-0.5">
+                                  {modifiers.map((m: any, mIdx: number) => (
+                                    <span key={mIdx} className="text-[10px] font-medium text-emerald-300 bg-emerald-950/50 border border-emerald-800/50 px-1.5 py-0.5 rounded">
+                                      + {m.optionName}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            <span className="text-white bg-zinc-950 font-bold px-2 py-0.5 rounded-lg border border-zinc-800 text-xs">x{item.quantity}</span>
+                          </div>
+                          {item.specialInstructions && (
+                            <span className="text-[10px] text-amber-400 font-medium leading-normal">
+                              📝 {item.specialInstructions}
+                            </span>
+                          )}
                         </div>
-                        {item.specialInstructions && (
-                          <span className="text-[10px] text-amber-400 font-medium leading-normal">
-                            📝 {item.specialInstructions}
-                          </span>
-                        )}
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
 

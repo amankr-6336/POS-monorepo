@@ -32,6 +32,45 @@ const MenuItemSchema = new Schema<MenuItem>(
         },
       },
     ],
+    variantGroups: [
+      {
+        name: { type: String, required: true },
+        options: [
+          {
+            name: { type: String, required: true },
+            priceDelta: { type: Number, default: 0 },
+            ingredientOverrides: [
+              {
+                ingredientId: { type: Schema.Types.ObjectId as any, ref: "Ingredient", required: true },
+                quantity: { type: Number, required: true },
+                unit: { type: String, enum: ["g", "kg", "ml", "l", "pcs"] },
+              },
+            ],
+          },
+        ],
+      },
+    ],
+    modifierGroups: [
+      {
+        name: { type: String, required: true },
+        multiSelect: { type: Boolean, default: false },
+        minSelections: { type: Number },
+        maxSelections: { type: Number },
+        options: [
+          {
+            name: { type: String, required: true },
+            priceDelta: { type: Number, default: 0 },
+            ingredients: [
+              {
+                ingredientId: { type: Schema.Types.ObjectId as any, ref: "Ingredient", required: true },
+                quantity: { type: Number, required: true },
+                unit: { type: String, enum: ["g", "kg", "ml", "l", "pcs"] },
+              },
+            ],
+          },
+        ],
+      },
+    ],
     isAvailable: { type: Boolean, default: true },
     isOutOfStock: { type: Boolean, default: false },
     prepStation: {
